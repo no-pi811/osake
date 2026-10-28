@@ -1,0 +1,2372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#080a22">
+<title>酒場バトル！どんちゃん横丁</title>
+<!-- フォントはオンライン時のみ読み込み（オフラインでも端末のフォントで動作します） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#080a22; --bg1:#121842; --bg2:#1b2259;
+  --panel:rgba(22,28,74,.88); --panel2:rgba(32,40,100,.9);
+  --ink:#fff6e6; --dim:#aab2db; --line:rgba(255,255,255,.12);
+  --red:#ff4d5e; --red2:#c8243a; --orange:#ff9a3c; --yellow:#ffd23f;
+  --teal:#2ee6c5; --teal2:#13a58b; --purple:#a46bff; --purple2:#6f3fd1;
+  --pink:#ff6fb5; --blue:#4fb3ff; --green:#5be37a;
+  --radius:20px;
+  --font-head:"Dela Gothic One","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  --font-body:"Zen Maru Gothic","M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg0);color:var(--ink);font-family:var(--font-body);font-weight:500;overscroll-behavior:none}
+body{min-height:100dvh;overflow-x:hidden}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none;touch-action:manipulation}
+input{font-family:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- background ---------- */
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  background:
+   radial-gradient(1200px 600px at 50% -10%,rgba(164,107,255,.28),transparent 60%),
+   radial-gradient(800px 500px at 0% 100%,rgba(255,77,94,.18),transparent 60%),
+   radial-gradient(800px 500px at 100% 90%,rgba(46,230,197,.14),transparent 60%),
+   linear-gradient(180deg,var(--bg1),var(--bg0) 70%)}
+#bg::before{content:"";position:absolute;inset:0;opacity:.22;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:36px 36px;mask-image:linear-gradient(180deg,transparent,#000 60%)}
+#bg .side-lantern{position:absolute;top:-10px;width:70px;opacity:.9;animation:sway 4.5s ease-in-out infinite;transform-origin:50% 0}
+#bg .side-lantern.l{left:max(8px,calc(50% - 600px))}
+#bg .side-lantern.r{right:max(8px,calc(50% - 600px));animation-delay:-2s}
+@media (max-width:760px){#bg .side-lantern{display:none}}
+@keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+
+/* ---------- layout ---------- */
+#app{position:relative;z-index:1;min-height:100dvh;display:flex;flex-direction:column}
+.screen{flex:1;display:flex;flex-direction:column;width:100%;max-width:560px;margin:0 auto;padding:14px 16px calc(20px + var(--safe-b));animation:screenIn .32s cubic-bezier(.2,.8,.2,1)}
+.screen.wide{max-width:1040px}
+@keyframes screenIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.screen.out{animation:screenOut .16s ease forwards}
+@keyframes screenOut{to{opacity:0;transform:translateY(-8px)}}
+.grow{flex:1}
+.center{text-align:center}
+.row{display:flex;gap:10px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:12px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.mt8{margin-top:8px}.mt16{margin-top:16px}.mt24{margin-top:24px}
+.dim{color:var(--dim)}
+.small{font-size:13px}
+
+/* ---------- topbar ---------- */
+.topbar{display:flex;align-items:center;gap:10px;min-height:52px;margin-bottom:10px}
+.topbar .title{flex:1;min-width:0;font-family:var(--font-head);font-size:19px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .title small{display:block;font-family:var(--font-body);font-size:12px;color:var(--dim);letter-spacing:0;font-weight:700}
+.icon-btn{width:46px;height:46px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;flex:none;transition:transform .1s}
+.icon-btn:active{transform:scale(.92)}
+.icon-btn svg{width:22px;height:22px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-weight:700;font-size:14px;white-space:nowrap}
+.chip.x2{background:linear-gradient(135deg,var(--yellow),var(--orange));color:#3a1800;border:0;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.07)}}
+
+/* ---------- panels ---------- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(6px)}
+.panel.neon{border:2px solid rgba(255,210,63,.55);box-shadow:0 0 0 1px rgba(255,210,63,.15),0 0 26px rgba(255,154,60,.25),0 10px 30px rgba(0,0,0,.4)}
+.panel h2,.h2{font-family:var(--font-head);font-size:22px;margin:0 0 8px;letter-spacing:.03em}
+.panel h3,.h3{font-size:16px;margin:0 0 6px;font-weight:900}
+.lead{font-size:16px;line-height:1.7;color:var(--ink)}
+.rule-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.rule-list li{display:flex;gap:10px;line-height:1.6;font-size:15px}
+.rule-list li b.n{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--red);font-size:13px;margin-top:1px}
+.note{font-size:13px;color:var(--dim);line-height:1.6}
+
+/* ---------- buttons ---------- */
+.btn{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:62px;padding:12px 18px;border-radius:18px;
+  font-family:var(--font-head);font-size:20px;letter-spacing:.04em;color:#fff;
+  background:linear-gradient(180deg,#ff6a78,var(--red));box-shadow:0 6px 0 var(--red2),0 10px 22px rgba(255,77,94,.35);
+  transition:transform .08s,box-shadow .08s,filter .2s;user-select:none}
+.btn:active{transform:translateY(5px);box-shadow:0 1px 0 var(--red2),0 4px 10px rgba(255,77,94,.3)}
+.btn small{font-family:var(--font-body);font-weight:700;font-size:12px;opacity:.85}
+.btn.yellow{background:linear-gradient(180deg,#ffe27a,var(--yellow));color:#3b2300;box-shadow:0 6px 0 #c99a10,0 10px 22px rgba(255,210,63,.3)}
+.btn.yellow:active{box-shadow:0 1px 0 #c99a10}
+.btn.teal{background:linear-gradient(180deg,#6af3da,var(--teal));color:#003b31;box-shadow:0 6px 0 var(--teal2),0 10px 22px rgba(46,230,197,.28)}
+.btn.teal:active{box-shadow:0 1px 0 var(--teal2)}
+.btn.purple{background:linear-gradient(180deg,#c09bff,var(--purple));box-shadow:0 6px 0 var(--purple2),0 10px 22px rgba(164,107,255,.3)}
+.btn.purple:active{box-shadow:0 1px 0 var(--purple2)}
+.btn.ghost{background:rgba(255,255,255,.06);border:2px solid var(--line);box-shadow:none;font-size:17px;min-height:54px}
+.btn.ghost:active{transform:scale(.98)}
+.btn.sm{min-height:46px;font-size:16px;border-radius:14px}
+.btn[disabled],.btn.disabled{filter:grayscale(.8) brightness(.7);pointer-events:none}
+.btn-row{display:flex;gap:10px}
+.btn-row>.btn{flex:1}
+.footer-actions{margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:12px}
+
+/* toggles & chips */
+.seg{display:flex;background:rgba(0,0,0,.25);border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;min-height:44px;border-radius:10px;font-weight:900;font-size:15px;color:var(--dim)}
+.seg button.on{background:var(--yellow);color:#3b2300}
+.pill-set{display:flex;flex-wrap:wrap;gap:8px}
+.pill{min-height:42px;padding:8px 14px;border-radius:999px;border:2px solid var(--line);font-weight:800;font-size:14px;color:var(--dim);background:rgba(255,255,255,.04)}
+.pill.on{border-color:var(--teal);color:var(--ink);background:rgba(46,230,197,.15)}
+.toggle{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);font-weight:800;font-size:14px}
+.toggle .dot{width:34px;height:20px;border-radius:999px;background:#444b75;position:relative;transition:.2s}
+.toggle .dot::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.toggle.on .dot{background:var(--teal)}
+.toggle.on .dot::after{left:16px}
+.field-label{font-weight:900;font-size:14px;color:var(--dim);margin:14px 0 8px}
+
+/* ---------- home ---------- */
+.home{justify-content:flex-start;max-width:600px}
+.home-hero{position:relative;text-align:center;padding:18px 0 6px}
+.lantern-row{display:flex;justify-content:center;gap:16px;height:96px}
+.lantern-row svg{width:56px;animation:sway 4s ease-in-out infinite;transform-origin:50% 0;filter:drop-shadow(0 0 16px rgba(255,77,94,.65))}
+.lantern-row svg:nth-child(2){animation-delay:-1.3s;width:64px}
+.lantern-row svg:nth-child(3){animation-delay:-2.6s}
+.sign{position:relative;margin:4px auto 0;padding:18px 14px 16px;border-radius:22px;border:3px solid rgba(255,111,181,.85);
+  box-shadow:0 0 18px rgba(255,111,181,.6),inset 0 0 18px rgba(255,111,181,.35);background:rgba(10,8,30,.55)}
+.sign .kicker{font-family:var(--font-head);font-size:clamp(18px,5vw,24px);color:var(--teal);text-shadow:0 0 8px var(--teal),0 0 22px rgba(46,230,197,.6);letter-spacing:.2em}
+.sign h1{margin:6px 0 0;font-family:var(--font-head);font-weight:400;font-size:clamp(36px,11vw,64px);line-height:1.08;letter-spacing:.04em;color:#fff3c4;
+  text-shadow:0 0 6px #ffcf4a,0 0 16px #ff9a3c,0 0 34px #ff4d5e,0 3px 0 #9a2232;animation:flicker 6s infinite}
+.sign .tag{margin-top:10px;font-weight:800;font-size:14px;color:var(--dim)}
+@keyframes flicker{0%,18%,22%,62%,64%,100%{opacity:1}20%,63%{opacity:.55}}
+.noren{display:flex;justify-content:center;gap:5px;margin:14px auto 0;width:min(320px,90%)}
+.noren span{flex:1;height:38px;border-radius:0 0 8px 8px;background:linear-gradient(180deg,#3b4bb8,#24307d);display:grid;place-items:center;font-family:var(--font-head);font-size:18px;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);animation:noren 3.4s ease-in-out infinite;transform-origin:50% 0}
+.noren span:nth-child(2n){animation-delay:-1s}
+.noren span:nth-child(3n){animation-delay:-2s}
+@keyframes noren{0%,100%{transform:skewX(0)}50%{transform:skewX(3deg)}}
+.home-menu{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+.home-menu .btn.big{grid-column:1/-1;min-height:78px;font-size:25px}
+.home-menu .btn:not(.big){min-height:64px;font-size:18px}
+.sound-row{display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+.resume{margin-top:14px}
+.ticker{margin-top:18px;overflow:hidden;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);padding:8px 0;white-space:nowrap;font-weight:800;color:var(--yellow);font-size:14px}
+.ticker div{display:inline-block;padding-left:100%;animation:tick 26s linear infinite}
+@keyframes tick{to{transform:translateX(-100%)}}
+
+/* ---------- avatars ---------- */
+.ava{--c:#ff5a5f;position:relative;flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),transparent 45%),var(--c);
+  font-family:var(--font-head);font-size:22px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);box-shadow:0 0 0 3px rgba(255,255,255,.12),0 0 16px color-mix(in srgb,var(--c) 60%,transparent)}
+.ava::before,.ava::after{content:"";position:absolute;left:50%;width:44%;height:9%;transform:translateX(-50%);background:#2a1b10;border-radius:3px}
+.ava::before{top:-3%}.ava::after{bottom:-3%}
+.ava.xl{width:110px;height:110px;font-size:48px}
+.ava.lg{width:76px;height:76px;font-size:32px}
+.ava.sm{width:36px;height:36px;font-size:16px}
+.ava.xs{width:28px;height:28px;font-size:13px;box-shadow:none}
+
+/* ---------- player setup ---------- */
+.player-list{display:flex;flex-direction:column;gap:10px}
+.prow{display:flex;align-items:center;gap:10px;padding:10px;border-radius:18px;background:var(--panel);border:1px solid var(--line);animation:screenIn .25s}
+.prow .ava{cursor:pointer}
+.prow input{flex:1;min-width:0;height:50px;border-radius:12px;border:2px solid var(--line);background:rgba(0,0,0,.25);color:var(--ink);padding:0 12px;font-size:18px;font-weight:800}
+.prow input:focus{outline:0;border-color:var(--yellow)}
+.prow .del{width:44px;height:44px;border-radius:12px;background:rgba(255,77,94,.15);color:var(--red);font-size:22px;font-weight:900}
+.prow .del[disabled]{opacity:.25;pointer-events:none}
+.ava-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;justify-items:center}
+.ava-picker button{padding:6px;border-radius:50%;border:3px solid transparent}
+.ava-picker button.on{border-color:var(--yellow)}
+.ava-picker button[disabled]{opacity:.3}
+.ava-picker .label{font-size:12px;color:var(--dim);margin-top:2px;text-align:center}
+.count-ctrl{display:flex;align-items:center;justify-content:center;gap:18px}
+.count-ctrl button{width:54px;height:54px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);font-size:28px;font-weight:900}
+.count-ctrl button[disabled]{opacity:.3;pointer-events:none}
+.count-ctrl .num{font-family:var(--font-head);font-size:40px;min-width:90px;text-align:center}
+
+/* ---------- mode select ---------- */
+.mode-grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media (min-width:720px){.mode-grid{grid-template-columns:1fr 1fr}}
+@media (min-width:1000px){.mode-grid{grid-template-columns:1fr 1fr 1fr}}
+.mode-card{position:relative;text-align:left;display:flex;gap:14px;padding:16px;border-radius:22px;background:var(--panel);border:2px solid var(--line);overflow:hidden;transition:transform .12s,border-color .2s;min-height:120px}
+.mode-card:active{transform:scale(.98)}
+.mode-card:hover{border-color:var(--mc)}
+.mode-card::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:var(--mc);opacity:.13}
+.mode-card .icon{flex:none;width:64px;height:64px;border-radius:18px;display:grid;place-items:center;background:var(--mc);box-shadow:0 0 18px color-mix(in srgb,var(--mc) 55%,transparent)}
+.mode-card .icon svg{width:38px;height:38px}
+.mode-card h3{margin:2px 0 4px;font-family:var(--font-head);font-weight:400;font-size:20px}
+.mode-card p{margin:0;font-size:14px;line-height:1.55;color:var(--dim)}
+.mode-card .meta{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.mode-card .meta span{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.08)}
+.mode-card .star{position:absolute;top:10px;right:12px;font-size:11px;font-weight:900;color:#3b2300;background:var(--yellow);padding:3px 8px;border-radius:999px;z-index:1}
+.mini-rank{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.mini-rank::-webkit-scrollbar{display:none}
+.mini-rank .mr{flex:none;display:flex;align-items:center;gap:6px;padding:6px 10px 6px 6px;border-radius:999px;background:var(--panel2);font-weight:800;font-size:14px}
+
+/* ---------- pass screen ---------- */
+.pass{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:10px 0}
+.pass .hand{width:120px;height:120px;opacity:.95}
+.pass .who{font-family:var(--font-head);font-size:clamp(30px,9vw,42px);line-height:1.2}
+.pass .msg{font-size:17px;line-height:1.7;color:var(--dim);max-width:340px}
+.pass .shield{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(255,210,63,.12);color:var(--yellow);font-weight:800;font-size:14px}
+.pass .btn{max-width:360px}
+.progress-dots{display:flex;gap:6px;justify-content:center}
+.progress-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.18)}
+.progress-dots i.done{background:var(--teal)}
+.progress-dots i.now{background:var(--yellow);box-shadow:0 0 10px var(--yellow)}
+
+/* ---------- 二択 ---------- */
+.topic-card{position:relative;padding:18px 16px;border-radius:24px;background:linear-gradient(160deg,rgba(255,77,94,.18),rgba(164,107,255,.18));border:2px solid rgba(255,255,255,.14);text-align:center}
+.topic-card .genre{display:inline-block;font-size:12px;font-weight:900;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.3);color:var(--yellow)}
+.topic-card .q{font-family:var(--font-head);font-size:20px;margin-top:8px}
+.vs-wrap{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.choice{position:relative;width:100%;min-height:118px;padding:18px 18px 18px 72px;border-radius:24px;text-align:left;font-size:clamp(19px,5.4vw,24px);font-weight:900;line-height:1.45;color:#fff;
+  transition:transform .1s, box-shadow .2s}
+.choice:active{transform:scale(.97)}
+.choice .tag{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-family:var(--font-head);font-size:26px;background:rgba(0,0,0,.25)}
+.choice.a{background:linear-gradient(135deg,#ff5f6e,#e2335e);box-shadow:0 7px 0 #9e1e3d,0 0 26px rgba(255,77,94,.35)}
+.choice.b{background:linear-gradient(135deg,#3fb7ff,#4a5cff);box-shadow:0 7px 0 #2a3399,0 0 26px rgba(79,179,255,.35)}
+.vs{align-self:center;font-family:var(--font-head);font-size:26px;color:var(--yellow);text-shadow:0 0 12px var(--orange);margin:-4px 0}
+.result-bars{display:flex;flex-direction:column;gap:14px}
+.rbar{position:relative;border-radius:22px;padding:14px 16px;overflow:hidden;background:rgba(255,255,255,.05);border:2px solid var(--line)}
+.rbar .fill{position:absolute;left:0;top:0;bottom:0;width:0;transition:width 1.1s cubic-bezier(.2,.8,.2,1);opacity:.85}
+.rbar.a .fill{background:linear-gradient(90deg,#e2335e,#ff5f6e)}
+.rbar.b .fill{background:linear-gradient(90deg,#4a5cff,#3fb7ff)}
+.rbar>*:not(.fill){position:relative}
+.rbar .lab{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.rbar .lab b{font-size:17px;line-height:1.4}
+.rbar .cnt{font-family:var(--font-head);font-size:30px;white-space:nowrap}
+.rbar .who{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:28px}
+.rbar .who span{display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 3px;border-radius:999px;background:rgba(0,0,0,.3);font-weight:800;font-size:14px;animation:pop .4s backwards}
+.badge{display:inline-block;font-size:12px;font-weight:900;padding:3px 9px;border-radius:999px;background:var(--yellow);color:#3b2300;margin-left:6px;vertical-align:middle}
+.badge.minor{background:var(--teal);color:#003b31}
+.special{text-align:center;padding:14px;border-radius:20px;background:linear-gradient(135deg,rgba(255,210,63,.2),rgba(255,111,181,.2));border:2px dashed var(--yellow);animation:pop .5s}
+.special b{display:block;font-family:var(--font-head);font-size:24px;color:var(--yellow)}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:none;opacity:1}}
+
+/* drumroll */
+.drum{flex:1;display:grid;place-items:center;text-align:center}
+.drum .big{font-family:var(--font-head);font-size:clamp(34px,10vw,52px);animation:shake .12s infinite}
+@keyframes shake{0%{transform:translate(1px,0) rotate(-1deg)}50%{transform:translate(-1px,1px) rotate(1deg)}100%{transform:translate(0,-1px)}}
+
+/* ---------- お絵描き ---------- */
+.draw-wrap{display:flex;flex-direction:column;gap:10px;flex:1}
+.canvas-box{position:relative;width:100%;aspect-ratio:1/1;max-height:min(62dvh,560px);margin:0 auto;border-radius:18px;overflow:hidden;background:#fffdf6;box-shadow:0 0 0 4px #e7c98a,0 0 0 8px #6b4524,0 12px 30px rgba(0,0,0,.4)}
+.canvas-box canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.timer-bar{height:12px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
+.timer-bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--teal),var(--yellow));transform-origin:left;transition:transform .25s linear}
+.timer-bar.warn i{background:linear-gradient(90deg,var(--orange),var(--red))}
+.tools{display:flex;flex-direction:column;gap:8px}
+.palette{display:flex;gap:8px;justify-content:space-between}
+.palette button{flex:1;max-width:44px;aspect-ratio:1;border-radius:50%;border:3px solid rgba(255,255,255,.2)}
+.palette button.on{border-color:#fff;box-shadow:0 0 0 3px var(--yellow)}
+.toolrow{display:flex;gap:8px}
+.toolrow button{flex:1;min-height:48px;border-radius:14px;background:var(--panel2);border:2px solid var(--line);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+.toolrow button.on{border-color:var(--yellow);background:rgba(255,210,63,.15)}
+.toolrow .w i{display:inline-block;border-radius:50%;background:#fff}
+.secret-word{text-align:center;padding:16px;border-radius:20px;background:#fffdf6;color:#2b1a0a;box-shadow:0 0 0 4px #e7c98a}
+.secret-word small{display:block;font-weight:900;color:#a0703a}
+.secret-word b{display:block;font-family:var(--font-head);font-size:clamp(30px,9vw,44px);font-weight:400;margin-top:4px}
+.mini-word{font-weight:900;font-size:14px;color:var(--yellow)}
+.art{border-radius:16px;overflow:hidden;background:#fffdf6;box-shadow:0 0 0 3px #e7c98a,0 0 0 6px #6b4524}
+.art img{display:block;width:100%;height:auto}
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gallery figure{margin:0}
+.gallery figcaption{font-size:13px;font-weight:800;margin-top:8px;text-align:center}
+.pick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pick{display:flex;align-items:center;gap:10px;padding:10px;border-radius:16px;background:var(--panel2);border:3px solid transparent;font-weight:900;font-size:16px;min-height:64px;text-align:left;transition:transform .1s}
+.pick:active{transform:scale(.97)}
+.pick.on{border-color:var(--teal);background:rgba(46,230,197,.15)}
+.pick.on::after{content:"✓";margin-left:auto;color:var(--teal);font-size:22px}
+.pick.bad.on{border-color:var(--red);background:rgba(255,77,94,.15)}
+.pick.bad.on::after{color:var(--red)}
+.pick[disabled]{opacity:.35;pointer-events:none}
+.text-input{width:100%;height:60px;border-radius:16px;border:2px solid var(--line);background:rgba(0,0,0,.3);color:var(--ink);padding:0 16px;font-size:22px;font-weight:900}
+.text-input:focus{outline:0;border-color:var(--yellow)}
+
+/* ---------- 裏切り者 ---------- */
+.role-card{perspective:1000px;width:100%;max-width:360px;margin:0 auto}
+.role-inner{position:relative;width:100%;aspect-ratio:3/4;transition:transform .7s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.role-card.flip .role-inner{transform:rotateY(180deg)}
+.role-face{position:absolute;inset:0;border-radius:26px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center;gap:10px}
+.role-face.back{background:repeating-linear-gradient(45deg,#2a1b5e 0 14px,#24174f 14px 28px);border:3px solid var(--purple);box-shadow:0 0 30px rgba(164,107,255,.4)}
+.role-face.back b{font-family:var(--font-head);font-size:26px}
+.role-face.front{transform:rotateY(180deg)}
+.role-face.citizen{background:linear-gradient(160deg,#16486b,#0f2b52);border:3px solid var(--blue)}
+.role-face.traitor{background:linear-gradient(160deg,#5e0d24,#2b0614);border:3px solid var(--red);box-shadow:0 0 34px rgba(255,77,94,.55)}
+.role-face .rname{font-family:var(--font-head);font-size:34px}
+.role-face .mission{background:rgba(0,0,0,.35);border-radius:16px;padding:12px;font-weight:900;font-size:18px;line-height:1.55}
+.role-face .hint{font-size:13px;color:#ffc9d2}
+.big-timer{font-family:var(--font-head);font-size:clamp(64px,22vw,120px);text-align:center;line-height:1;letter-spacing:.02em;text-shadow:0 0 22px rgba(46,230,197,.6)}
+.big-timer.warn{color:var(--red);text-shadow:0 0 22px rgba(255,77,94,.8);animation:pulse .5s infinite}
+.ring{position:relative;width:min(70vw,260px);aspect-ratio:1;margin:0 auto}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .big-timer{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(52px,16vw,84px)}
+.reveal-traitor{text-align:center;animation:pop .6s}
+.spot{position:relative;display:inline-block;padding:20px}
+.spot::before{content:"";position:absolute;inset:-30px;border-radius:50%;background:radial-gradient(circle,rgba(255,77,94,.55),transparent 65%);animation:pulse 1s infinite}
+.vote-tally{display:flex;flex-direction:column;gap:8px}
+.vt{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.05)}
+.vt .bar{flex:1;height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.vt .bar i{display:block;height:100%;background:var(--purple);width:0;transition:width .9s}
+.vt.is-traitor{background:rgba(255,77,94,.15);border:1px solid var(--red)}
+.vt .n{font-family:var(--font-head);min-width:30px;text-align:right}
+
+/* ---------- quiz ---------- */
+.qcard{padding:20px 16px;border-radius:24px;background:var(--panel);border:2px solid rgba(46,230,197,.4);text-align:center}
+.qcard .qtext{font-size:clamp(20px,5.8vw,26px);font-weight:900;line-height:1.5}
+.answers{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+.answers.two{grid-template-columns:1fr 1fr}
+.ans{min-height:64px;border-radius:18px;padding:10px 14px;font-size:19px;font-weight:900;background:var(--panel2);border:2px solid var(--line);text-align:left;display:flex;align-items:center;gap:12px;transition:transform .1s}
+.ans:active{transform:scale(.97)}
+.ans .k{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.1);font-family:var(--font-head);font-size:16px}
+.ans.correct{border-color:var(--green);background:rgba(91,227,122,.2)}
+.ans.wrong{border-color:var(--red);background:rgba(255,77,94,.2)}
+.ans.fade{opacity:.4}
+.verdict{text-align:center;font-family:var(--font-head);font-size:38px;animation:pop .45s}
+.verdict.ok{color:var(--green);text-shadow:0 0 18px rgba(91,227,122,.6)}
+.verdict.ng{color:var(--red)}
+
+/* ---------- sync ---------- */
+.groups{display:flex;flex-direction:column;gap:10px}
+.group{padding:12px 14px;border-radius:18px;background:var(--panel2);border:2px solid var(--line);animation:pop .4s backwards}
+.group.top{border-color:var(--yellow)}
+.group.sel{border-color:var(--teal);background:rgba(46,230,197,.12)}
+.group .gh{display:flex;justify-content:space-between;align-items:center;font-weight:900;font-size:18px}
+.group .gh .c{font-family:var(--font-head)}
+
+/* ---------- roulette ---------- */
+.wheel-box{position:relative;width:min(88vw,380px);aspect-ratio:1;margin:8px auto}
+.wheel-box svg.wheel{width:100%;height:100%;filter:drop-shadow(0 0 22px rgba(255,154,60,.35))}
+.wheel-pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:44px;z-index:2;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))}
+.wheel-hub{position:absolute;left:50%;top:50%;width:22%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c4,#ff9a3c 60%,#c25b12);display:grid;place-items:center;font-family:var(--font-head);font-size:14px;color:#3b1800;box-shadow:0 0 0 5px #3b1800,0 0 20px rgba(255,154,60,.8)}
+.roulette-result{text-align:center;animation:pop .5s}
+.roulette-result .rt{font-family:var(--font-head);font-size:30px;color:var(--yellow);text-shadow:0 0 14px var(--orange)}
+.history{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.history span{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--dim)}
+
+/* ---------- ranking ---------- */
+.award-list{display:flex;flex-direction:column;gap:8px}
+.award{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.05);animation:pop .4s backwards}
+.award .nm{flex:1;font-weight:900;font-size:16px;min-width:0}
+.award .nm small{display:block;font-size:12px;color:var(--dim);font-weight:700}
+.award .pt{font-family:var(--font-head);font-size:22px;color:var(--yellow);white-space:nowrap}
+.award .pt.zero{color:var(--dim)}
+.rank-list{display:flex;flex-direction:column;gap:8px}
+.rank{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:18px;background:var(--panel);border:2px solid var(--line);animation:screenIn .4s backwards}
+.rank .pos{width:42px;text-align:center;font-family:var(--font-head);font-size:24px}
+.rank.p1{border-color:#ffd23f;background:linear-gradient(90deg,rgba(255,210,63,.22),var(--panel))}
+.rank.p2{border-color:#cfd8ff}
+.rank.p3{border-color:#e39a5b}
+.rank .nm{flex:1;min-width:0;font-weight:900;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .nm small{display:block;font-size:12px;color:var(--dim);font-weight:700}
+.rank .sc{font-family:var(--font-head);font-size:26px;white-space:nowrap}
+.rank .delta{font-size:13px;font-weight:900;color:var(--teal)}
+.tie{font-size:11px;font-weight:900;color:#3b2300;background:var(--yellow);padding:2px 6px;border-radius:6px;margin-left:4px;vertical-align:middle}
+.ceremony-card{text-align:center;padding:22px 16px;border-radius:26px;background:var(--panel);border:2px solid var(--line);animation:pop .55s}
+.ceremony-card.first{border:3px solid var(--yellow);box-shadow:0 0 40px rgba(255,210,63,.45);background:linear-gradient(160deg,rgba(255,210,63,.2),var(--panel))}
+.ceremony-card .place{font-family:var(--font-head);font-size:28px;color:var(--yellow)}
+.ceremony-card .nm{font-family:var(--font-head);font-size:clamp(30px,9vw,44px);margin-top:8px}
+.ceremony-card .sc{font-family:var(--font-head);font-size:30px;margin-top:4px}
+.crown{width:84px;margin:0 auto -8px;display:block;filter:drop-shadow(0 0 12px rgba(255,210,63,.8));animation:pop .6s .2s backwards}
+.title-card{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:linear-gradient(135deg,rgba(164,107,255,.2),rgba(46,230,197,.12));border:1px solid rgba(164,107,255,.5);animation:pop .4s backwards}
+.title-card .tt{font-family:var(--font-head);font-size:18px;color:var(--yellow)}
+.title-card .why{font-size:13px;color:var(--dim);font-weight:700}
+
+/* ---------- modal ---------- */
+.modal-back{position:fixed;inset:0;z-index:50;background:rgba(4,5,20,.72);backdrop-filter:blur(4px);display:grid;place-items:center;padding:20px;animation:fadeIn .18s}
+@keyframes fadeIn{from{opacity:0}}
+.modal{width:100%;max-width:440px;max-height:86dvh;overflow:auto;background:var(--bg2);border:2px solid var(--line);border-radius:24px;padding:20px;animation:pop .28s;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal h2{font-family:var(--font-head);font-weight:400;font-size:22px;margin:0 0 10px}
+.modal p{line-height:1.7;margin:0 0 14px}
+.modal .btn-row{margin-top:16px}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-b));transform:translateX(-50%) translateY(140%);z-index:60;padding:12px 20px;border-radius:999px;background:#fff3c4;color:#3b2300;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .3s,opacity .3s;max-width:90vw;text-align:center;opacity:0;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* transition curtain */
+#curtain{position:fixed;inset:0;z-index:40;pointer-events:none;display:grid;place-items:center;opacity:0}
+#curtain.on{animation:curtain .9s ease forwards}
+#curtain .ct{font-family:var(--font-head);font-size:clamp(30px,9vw,54px);color:#fff3c4;text-shadow:0 0 14px #ff9a3c,0 0 32px #ff4d5e;transform:scale(.8)}
+#curtain::before{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(20,14,50,.92),rgba(5,6,22,.98))}
+#curtain .ct{position:relative}
+@keyframes curtain{0%{opacity:0}18%{opacity:1}75%{opacity:1}100%{opacity:0}}
+#curtain.on .ct{animation:ctin .9s ease forwards}
+@keyframes ctin{0%{transform:scale(.6);opacity:0}25%{transform:scale(1.05);opacity:1}75%{transform:scale(1)}100%{transform:scale(1.1);opacity:0}}
+
+/* confetti */
+#confetti{position:fixed;inset:0;z-index:45;pointer-events:none;width:100%;height:100%}
+
+@media (min-width:720px){
+  .screen{padding-top:22px}
+  .choice{min-height:130px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01s!important;animation-iteration-count:1!important;transition-duration:.01s!important}
+}
+
+.gicon{flex:none;width:64px;height:64px;border-radius:18px;display:grid;place-items:center;background:var(--mc);box-shadow:0 0 18px color-mix(in srgb,var(--mc) 55%,transparent)}
+.gicon svg{width:38px;height:38px}
+
+</style>
+</head>
+<body>
+<div id="bg" aria-hidden="true"><div class="side-lantern l"></div><div class="side-lantern r"></div></div>
+<div id="app"></div>
+<div id="curtain" aria-hidden="true"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+/* =========================================================
+ *  GAME DATA — お題・クイズ・ミッションはすべてここに分離
+ *  追加するときは各配列に同じ形のオブジェクトを足すだけでOK
+ * ========================================================= */
+const DATA = {};
+
+/* ---------- 究極の二択酒場 ---------- */
+DATA.choiceGenres = {
+  food:  '食べ物',
+  money: 'お金・仕事',
+  human: '恋愛・人間関係',
+  ifpow: 'もしも・超能力',
+  daily: '日常生活',
+  life:  '価値観・人生',
+  silly: 'くだらない究極'
+};
+// [genre, A, B]
+DATA.choices = [
+  // 食べ物
+  ['food','一生ラーメン禁止','一生カレー禁止'],
+  ['food','どんな料理でも作れるが味見できない','どんな料理でも食べられるが一口だけ'],
+  ['food','一生お寿司禁止','一生焼肉禁止'],
+  ['food','毎食おいしいが毎日同じメニュー','毎食違うが味は普通'],
+  ['food','一生甘いもの禁止','一生しょっぱいもの禁止'],
+  ['food','一生ご飯（お米）禁止','一生パン禁止'],
+  ['food','食べ放題の店に毎日タダで行ける','高級店に年1回タダで行ける'],
+  ['food','一生温かい料理しか食べられない','一生冷たい料理しか食べられない'],
+  ['food','好物が毎日1品勝手に届く','嫌いな食べ物が全部好きになる'],
+  ['food','一生ポテトチップス1種類の味だけ','一生アイス1種類の味だけ'],
+  ['food','たこ焼きの中身が毎回ランダム','おにぎりの具が毎回ランダム'],
+  ['food','一生飲み物は水だけ','一生飲み物はお茶だけ'],
+  ['food','何を食べても太らないが味が薄い','味は最高だが普通に太る'],
+  ['food','一生ドレッシング禁止','一生マヨネーズ禁止'],
+  ['food','鍋の締めは永遠に雑炊','鍋の締めは永遠にうどん'],
+  ['food','一生朝ごはんはご飯と味噌汁','一生朝ごはんはパンとコーヒー'],
+  // お金・仕事
+  ['money','100万円を今すぐもらう','10年後に1000万円もらう'],
+  ['money','年収2000万円だが週6勤務','年収500万円だが週3勤務'],
+  ['money','好きな仕事で給料は普通','嫌いな仕事で給料は3倍'],
+  ['money','宝くじで1億円当たるが誰にも言えない','1000万円当たって全員に自慢できる'],
+  ['money','毎朝5時に出勤だが15時に帰れる','毎朝11時に出勤だが22時まで働く'],
+  ['money','完全在宅で一生誰とも会わない仕事','毎日出社だが職場が最高に楽しい'],
+  ['money','毎月10万円が自動でもらえる','一度だけ3000万円もらえる'],
+  ['money','上司が超優秀だが厳しい','上司がゆるいが頼りない'],
+  ['money','会議が一切ない会社','残業が一切ない会社'],
+  ['money','給料日が毎日（日割り）','給料日が年1回（年俸一括）'],
+  ['money','社長になれるが休みがない','平社員だが休みが年200日'],
+  ['money','世界一の職人になれる','世界一の営業マンになれる'],
+  ['money','お金の心配が一生ない','時間の心配が一生ない'],
+  ['money','ボーナスが年10回（少額）','ボーナスが年1回（大金）'],
+  // 恋愛・人間関係
+  ['human','友達全員と同じ趣味になる','自分だけの趣味を極める'],
+  ['human','親友が1人だけ','知り合いが1000人'],
+  ['human','好きな人の気持ちが分かる','自分の気持ちを正確に伝えられる'],
+  ['human','毎日LINEするけど会うのは月1','LINEはしないけど毎週会う'],
+  ['human','恋人が超料理上手','恋人が超掃除上手'],
+  ['human','デートは毎回サプライズ','デートは毎回きっちり計画どおり'],
+  ['human','友達の秘密を全部知っている','自分の秘密を誰も知らない'],
+  ['human','誰とでもすぐ仲良くなれる','一度仲良くなったら一生続く'],
+  ['human','恋人と趣味が完全一致','恋人と価値観が完全一致'],
+  ['human','パーティーの主役になる','パーティーの名脇役になる'],
+  ['human','家族と毎日夕食','友達と毎週飲み会'],
+  ['human','初対面で必ず好印象','長く付き合うほど好かれる'],
+  ['human','記念日を絶対に忘れない人','毎日小さく褒めてくれる人'],
+  ['human','ケンカしても5分で仲直り','そもそも一生ケンカしない（けど本音も言わない）'],
+  // もしも・超能力
+  ['ifpow','過去に1回だけ戻れる','未来を1回だけ見られる'],
+  ['ifpow','自分の心の声が1日1回だけ全員に聞こえる','他人の心の声が1日1回だけ聞こえる'],
+  ['ifpow','空を飛べる（時速10km）','瞬間移動できる（1日1回）'],
+  ['ifpow','透明人間になれる','動物と話せる'],
+  ['ifpow','時間を5秒止められる','5秒先の未来が見える'],
+  ['ifpow','どんな言語も話せる','どんな楽器も弾ける'],
+  ['ifpow','一度見たものを絶対に忘れない','嫌なことをすぐ忘れられる'],
+  ['ifpow','眠らなくても平気な体','1分で8時間分眠れる体'],
+  ['ifpow','嘘を見抜ける','嘘が絶対にバレない'],
+  ['ifpow','100年前の日本に1日行ける','100年後の日本に1日行ける'],
+  ['ifpow','天気を自由に変えられる（自分の周りだけ）','信号を全部青にできる'],
+  ['ifpow','好きな有名人と1日入れ替われる','好きな動物と1日入れ替われる'],
+  ['ifpow','触ったものを冷やせる','触ったものを温められる'],
+  ['ifpow','10年若返る','10年分の知識をもらう'],
+  ['ifpow','どこでもドアが1つ','タイムマシンが1回'],
+  // 日常生活
+  ['daily','一生夏だけの世界','一生冬だけの世界'],
+  ['daily','旅行先は毎回ランダムだが無料','好きな場所に行けるが料金が10倍'],
+  ['daily','スマホなしで1か月','お風呂なしで1週間'],
+  ['daily','毎朝絶対に寝坊しない','毎晩絶対にすぐ眠れる'],
+  ['daily','家が駅から徒歩1分だが狭い','家が駅から徒歩30分だが豪邸'],
+  ['daily','一生エレベーター禁止','一生エスカレーター禁止'],
+  ['daily','どこでもWi-Fiが最速','どこでも充電がすぐ満タン'],
+  ['daily','洗濯が一生自動','料理が一生自動'],
+  ['daily','毎日の服を自分で選べない','毎日の昼ごはんを自分で選べない'],
+  ['daily','電車が絶対に座れる','電車が絶対に遅れない'],
+  ['daily','一生テレビ禁止','一生動画サイト禁止'],
+  ['daily','休日は毎回家でゴロゴロ','休日は毎回アクティブに外出'],
+  ['daily','雨の日は絶対に濡れない','暑い日は絶対に汗をかかない'],
+  ['daily','部屋が勝手に片付く','財布が勝手に整理される'],
+  ['daily','都会のタワマン暮らし','田舎の一軒家暮らし'],
+  ['daily','一生ずっと晴れの都会','一生ずっと雪の温泉地'],
+  // 価値観・人生
+  ['life','有名だけど忙しい人生','無名だけど自由な人生'],
+  ['life','やりたいことを全部やって後悔','やらずに後悔'],
+  ['life','100歳まで普通に生きる','70歳まで最高に充実して生きる'],
+  ['life','誰からも尊敬される','誰からも愛される'],
+  ['life','天才だけど努力できない','凡人だけど努力の天才'],
+  ['life','人生の正解が全部分かる','人生のサプライズを全部楽しめる'],
+  ['life','一つの道を極める','いろんなことを少しずつ'],
+  ['life','安定した人生','刺激的な人生'],
+  ['life','過去の自分にアドバイスできる','未来の自分からアドバイスがもらえる'],
+  ['life','世界中を旅して暮らす','地元で一生仲間と暮らす'],
+  ['life','絶対に失敗しない人生','失敗するたびに大きく成長する人生'],
+  ['life','自分の銅像が建つ','自分の名前の祝日ができる'],
+  ['life','みんなに好かれるけど本音を言えない','本音を言えるけど半分に嫌われる'],
+  ['life','一生学生','一生社会人（ただし今すぐ定年なし）'],
+  // くだらない究極
+  ['silly','くしゃみが毎回「ハクション大魔王」になる','あくびが毎回ファンファーレになる'],
+  ['silly','歩くたびにピコピコ音が鳴る','座るたびに拍手が起こる'],
+  ['silly','一生語尾が「〜でござる」','一生語尾が「〜だっちゃ」'],
+  ['silly','髪の毛が毎日違う色になる','眉毛が毎日違う形になる'],
+  ['silly','指が1本多い','耳がネコ耳'],
+  ['silly','笑うと必ず鼻から音が出る','驚くと必ず「キャー」と叫ぶ'],
+  ['silly','靴が毎朝ランダムに左右逆','服が毎朝ランダムに裏返し'],
+  ['silly','冷蔵庫を開けるたびに「いらっしゃい」と言われる','ドアを開けるたびに「おかえり」と言われる'],
+  ['silly','自分のテーマ曲が常に流れる','自分の実況が常に流れる'],
+  ['silly','電話に出ると必ず演歌が流れる','メールを送ると必ず紙吹雪が舞う'],
+  ['silly','手のひらが常にちょっと温かい','足の裏が常にちょっと冷たい'],
+  ['silly','ペンギンに一生追いかけられる','ハトに一生見守られる'],
+  ['silly','全身の毛が一晩でモフモフ','声が一晩でアニメ声'],
+  ['silly','食事のたびにカメラが寄ってくる','寝るたびにナレーションが入る'],
+  ['silly','傘を差すと必ず晴れる','傘を忘れると必ず雨'],
+  ['silly','しゃっくりが1日1回100回続く','くしゃみが1日1回30回続く']
+];
+
+/* ---------- お絵描きバトル ---------- */
+DATA.drawGenres = {
+  animal: '動物', food: '食べ物', item: '日用品', job: '職業', scene: '架空シーン', odd: '変な状況'
+};
+DATA.drawWords = [
+  // 動物
+  ['animal','ゾウ',['ぞう','象']],['animal','キリン',['きりん']],['animal','ペンギン',['ぺんぎん']],
+  ['animal','カタツムリ',['かたつむり','でんでんむし']],['animal','タコ',['たこ','蛸']],['animal','ウサギ',['うさぎ','兎']],
+  ['animal','カメ',['かめ','亀']],['animal','ヘビ',['へび','蛇']],['animal','ネコ',['ねこ','猫']],
+  ['animal','クジラ',['くじら','鯨']],['animal','パンダ',['ぱんだ']],['animal','ニワトリ',['にわとり','鶏']],
+  // 食べ物
+  ['food','ラーメン',['らーめん']],['food','おにぎり',['オニギリ','おむすび']],['food','ソフトクリーム',['そふとくりーむ','アイス']],
+  ['food','焼き鳥',['やきとり','焼鳥']],['food','バナナ',['ばなな']],['food','目玉焼き',['めだまやき']],
+  ['food','寿司',['すし','お寿司','おすし']],['food','ピザ',['ぴざ']],['food','たこ焼き',['たこやき']],
+  ['food','ショートケーキ',['ケーキ','けーき']],['food','枝豆',['えだまめ']],['food','ハンバーガー',['はんばーがー']],
+  // 日用品
+  ['item','傘',['かさ','カサ']],['item','歯ブラシ',['はぶらし']],['item','メガネ',['めがね','眼鏡']],
+  ['item','ハサミ',['はさみ']],['item','電球',['でんきゅう']],['item','目覚まし時計',['時計','とけい','目覚まし']],
+  ['item','掃除機',['そうじき']],['item','トイレットペーパー',['トイレ紙']],['item','鍵',['かぎ','カギ']],
+  ['item','スマートフォン',['スマホ','すまほ','携帯']],['item','扇風機',['せんぷうき']],['item','靴下',['くつした']],
+  // 職業
+  ['job','消防士',['しょうぼうし']],['job','料理人',['コック','シェフ','板前']],['job','お医者さん',['医者','いしゃ','医師']],
+  ['job','警察官',['けいさつかん','おまわりさん','警察']],['job','パイロット',['ぱいろっと']],['job','美容師',['びようし']],
+  ['job','宇宙飛行士',['うちゅうひこうし']],['job','漁師',['りょうし']],['job','郵便屋さん',['郵便配達','ゆうびんや']],
+  ['job','マジシャン',['手品師','まじしゃん']],
+  // 架空シーン
+  ['scene','UFOが牛をさらう',['UFO','ユーフォー']],['scene','海賊船が宝を見つける',['海賊','かいぞく']],
+  ['scene','忍者が屋根の上を走る',['忍者','にんじゃ']],['scene','ロボットが料理をしている',['ロボット','ろぼっと']],
+  ['scene','恐竜がビルを歩く',['恐竜','きょうりゅう']],['scene','雪だるまが溶けかけている',['雪だるま','ゆきだるま']],
+  ['scene','魔法使いがほうきで飛ぶ',['魔法使い','魔女','まほうつかい']],['scene','サメに追いかけられるボート',['サメ','さめ']],
+  ['scene','月にロケットが着陸',['ロケット','ろけっと']],['scene','お化けがお化け屋敷から出てくる',['お化け','おばけ','幽霊']],
+  // 変な状況
+  ['odd','満員電車にゾウ',['ゾウ','満員電車']],['odd','カッパがサウナに入る',['カッパ','かっぱ']],
+  ['odd','ネコが会議をしている',['ネコ','猫','会議']],['odd','空からおにぎりが降る',['おにぎり']],
+  ['odd','ペンギンがスキーをする',['ペンギン','スキー']],['odd','巨大なカニに挟まれる',['カニ','かに','蟹']],
+  ['odd','雨の代わりにラーメンが降る',['ラーメン']],['odd','木からお金がなる',['お金','金のなる木']],
+  ['odd','トイレで寝ている人',['トイレ','といれ']],['odd','犬がバイクに乗る',['犬','いぬ','バイク']]
+];
+
+/* ---------- 裏切り者ミッション ---------- */
+// {text, hint, diff(1-3)}
+DATA.missions = [
+  {t:'誰か1人に「なるほど」と言わせる',h:'相手が納得しそうな豆知識を話してみよう',d:1},
+  {t:'ほかのプレイヤーの誰かに「7」という数字を口にさせる',h:'「好きな数字は？」「何時に起きた？」など',d:1},
+  {t:'誰かに3回、あなたへ質問させる',h:'気になる話題をわざと途中で止めると効果的',d:2},
+  {t:'会話の話題を一度だけ「動物」の話に変える',h:'ペットの話や動画の話から自然に',d:1},
+  {t:'誰かに「ラーメン」という単語を言わせる',h:'夜食や締めの話をふってみよう',d:1},
+  {t:'全員に何か1つを選ばせる（多数決など）',h:'「どっちがいいと思う？」と問いかけよう',d:2},
+  {t:'誰かに「懐かしい」と言わせる',h:'昔のゲームやお菓子の話題がおすすめ',d:2},
+  {t:'誰か1人と握手をする',h:'「いい意見だね！」と自然に手を差し出そう',d:2},
+  {t:'会話の中で「実は」で始まる話を2回する',h:'ちょっとした打ち明け話を用意しよう',d:1},
+  {t:'誰かに「夏」という単語を言わせる',h:'季節の話・旅行の話から',d:1},
+  {t:'ほかのプレイヤー全員の名前を1回ずつ呼ぶ',h:'話を振るときに名前で呼びかける',d:2},
+  {t:'誰かに「旅行」の思い出を話させる',h:'「最近どこか行った？」',d:2},
+  {t:'誰かに「好きな食べ物」を答えさせる',h:'ストレートに聞くと怪しまれるかも',d:1},
+  {t:'誰か2人に同時に笑ってもらう',h:'軽いボケを1つ用意しておこう',d:3},
+  {t:'誰かに「えっ、本当？」と言わせる',h:'ちょっと意外な事実を話してみよう',d:2},
+  {t:'誰かに「月曜日」という単語を言わせる',h:'休み明けの話・仕事や学校の話',d:2},
+  {t:'会話の中で同じ言葉を3回さりげなく使う（言葉は自由）',h:'口ぐせのように自然に',d:2},
+  {t:'誰かに数字の「100」を言わせる',h:'点数、値段、年齢の話など',d:2},
+  {t:'誰かに「眠い」と言わせる',h:'昨日何時に寝たか聞いてみよう',d:2},
+  {t:'誰かに歌のタイトルかアーティスト名を1つ言わせる',h:'カラオケの話題から',d:1},
+  {t:'誰か1人に「天才」と言わせる',h:'ちょっとしたひらめきを披露しよう',d:3},
+  {t:'全員の視線を一度だけ天井（上）に向けさせる',h:'「あれ、今上で音しなかった？」',d:3}
+];
+
+/* ---------- 以心伝心チャレンジ ---------- */
+// type:'choice' {q, opts}  /  type:'free' {q, hint}
+DATA.syncQs = [
+  {q:'コンビニで買う定番のおつまみは？',opts:['からあげ','枝豆','チーズ','ナッツ']},
+  {q:'最強だと思う動物は？',opts:['ライオン','ゾウ','クマ','ゴリラ']},
+  {q:'カラオケで最初に歌いたいジャンルは？',opts:['J-POP','アニソン','ロック','バラード']},
+  {q:'旅行で最も重要なのは？',opts:['食事','景色','宿']},
+  {q:'無人島に1つだけ持っていくなら？',opts:['ナイフ','ライター','スマホ','テント']},
+  {q:'鍋といえば？',opts:['キムチ鍋','すき焼き','水炊き','もつ鍋']},
+  {q:'お寿司で最初に頼むのは？',opts:['マグロ','サーモン','たまご','えんがわ']},
+  {q:'焼き鳥はタレ派？塩派？',opts:['タレ','塩']},
+  {q:'夏といえば？',opts:['海','花火','スイカ','かき氷']},
+  {q:'冬といえば？',opts:['こたつ','雪','鍋','クリスマス']},
+  {q:'朝ごはんの定番は？',opts:['ご飯','パン','シリアル','食べない']},
+  {q:'一番好きな季節は？',opts:['春','夏','秋','冬']},
+  {q:'ペットにするなら？',opts:['犬','猫','鳥','魚']},
+  {q:'ラーメンの味といえば？',opts:['醤油','味噌','塩','とんこつ']},
+  {q:'からあげにレモンは？',opts:['かける','かけない','別皿で']},
+  {q:'休日の過ごし方は？',opts:['家でのんびり','買い物','アウトドア','友達と遊ぶ']},
+  {q:'おでんの具で一番は？',opts:['大根','たまご','ちくわ','こんにゃく']},
+  {q:'目玉焼きにかけるのは？',opts:['醤油','ソース','塩こしょう','ケチャップ']},
+  {q:'遊園地で最初に乗るのは？',opts:['ジェットコースター','観覧車','メリーゴーランド','お化け屋敷']},
+  {q:'超能力を1つもらえるなら？',opts:['瞬間移動','透明人間','空を飛ぶ','心を読む']},
+  {q:'宝くじが当たったら最初に買うのは？',opts:['家','車','旅行','貯金する']},
+  {q:'きのこの山とたけのこの里、どっち？',opts:['きのこ','たけのこ']},
+  {q:'お祭りの屋台で最初に買うのは？',opts:['たこ焼き','焼きそば','りんご飴','かき氷']},
+  {q:'飲み会の最初の1杯は？',opts:['ビール','ハイボール','サワー','ソフトドリンク']},
+  {q:'住むなら？',opts:['海の近く','山の近く','都会のど真ん中']},
+  {q:'色といえば？（直感で）',opts:['赤','青','黄','緑']},
+  {q:'1から5の数字で思い浮かぶのは？',opts:['1','2','3','4','5']},
+  {q:'じゃんけんで最初に出すのは？',opts:['グー','チョキ','パー']},
+  // 自由入力（表記ゆれは「ひらがな/カタカナ/大小文字/空白」を吸収して判定）
+  {type:'free',q:'「赤い果物」といえば？',hint:'ひらがな・カタカナどちらでもOK'},
+  {type:'free',q:'「白い動物」といえば？',hint:'1単語で'},
+  {type:'free',q:'「お弁当のおかず」といえば？',hint:'1単語で'},
+  {type:'free',q:'「丸いもの」といえば？',hint:'1単語で'},
+  {type:'free',q:'「夏祭りの食べ物」といえば？',hint:'1単語で'},
+  {type:'free',q:'「日本一有名な山」といえば？',hint:'みんな同じになるかも？'}
+];
+
+/* ---------- 瞬間クイズ ---------- */
+// {q, o:[...], a:正解index, e:解説, c:カテゴリ}
+DATA.quiz = [
+  {c:'一般常識',q:'日本で一番高い山は？',o:['富士山','北岳','穂高岳','槍ヶ岳'],a:0,e:'富士山は標高3776m。'},
+  {c:'一般常識',q:'1年は何日？（うるう年ではない）',o:['364日','365日','366日'],a:1,e:'うるう年は366日。'},
+  {c:'一般常識',q:'日本の首都は？',o:['大阪','京都','東京','名古屋'],a:2,e:'東京です。'},
+  {c:'一般常識',q:'信号の「止まれ」は何色？',o:['青','黄','赤'],a:2,e:'赤は止まれ。'},
+  {c:'一般常識',q:'1ダースはいくつ？',o:['10','12','15','20'],a:1,e:'1ダース＝12個。'},
+  {c:'一般常識',q:'虹は一般的に何色と言われる？（日本）',o:['5色','6色','7色','8色'],a:2,e:'日本では7色が一般的。'},
+  {c:'一般常識',q:'日本の都道府県の数は？',o:['43','46','47','50'],a:2,e:'1都1道2府43県で47。'},
+  {c:'一般常識',q:'将棋の盤のマス目はいくつ？',o:['8×8','9×9','10×10'],a:1,e:'9×9＝81マス。'},
+  {c:'一般常識',q:'サッカー1チームのフィールド上の人数は？',o:['9人','10人','11人','12人'],a:2,e:'ゴールキーパー含め11人。'},
+  {c:'一般常識',q:'オリンピックの五輪マークの輪はいくつ？',o:['4','5','6'],a:1,e:'5つの輪で五大陸を表す。'},
+  {c:'一般常識',q:'1時間は何分？',o:['60分','100分','24分'],a:0,e:'60分です。'},
+  {c:'一般常識',q:'日本の国鳥は？',o:['ツル','キジ','トキ','ハト'],a:1,e:'国鳥はキジ。'},
+  // 言葉
+  {c:'言葉',q:'「犬も歩けば○○に当たる」○○に入るのは？',o:['棒','石','壁','人'],a:0,e:'犬も歩けば棒に当たる。'},
+  {c:'言葉',q:'「猿も木から○○る」',o:['降り','落ち','逃げ'],a:1,e:'名人でも失敗する、の意味。'},
+  {c:'言葉',q:'「花より○○」',o:['団子','餅','饅頭','煎餅'],a:0,e:'花より団子。'},
+  {c:'言葉',q:'「石の上にも○年」',o:['一','三','五','十'],a:1,e:'石の上にも三年。'},
+  {c:'言葉',q:'「月曜日」を英語で言うと？',o:['Sunday','Monday','Tuesday','Friday'],a:1,e:'Monday。'},
+  {c:'言葉',q:'「ありがとう」を英語で言うと？',o:['Sorry','Hello','Thank you','Goodbye'],a:2,e:'Thank you。'},
+  {c:'言葉',q:'「春夏秋冬」で3番目は？',o:['春','夏','秋','冬'],a:2,e:'秋です。'},
+  {c:'言葉',q:'「七転び○起き」',o:['七','八','九'],a:1,e:'七転び八起き。'},
+  {c:'言葉',q:'「急がば○○」',o:['走れ','回れ','止まれ','待て'],a:1,e:'急がば回れ。'},
+  {c:'言葉',q:'「笑う門には○○来る」',o:['福','鬼','春','友'],a:0,e:'笑う門には福来る。'},
+  // 食べ物
+  {c:'食べ物',q:'納豆の原料は？',o:['小豆','大豆','黒豆','そら豆'],a:1,e:'大豆を発酵させたもの。'},
+  {c:'食べ物',q:'豆腐の原料は？',o:['米','小麦','大豆'],a:2,e:'大豆からできています。'},
+  {c:'食べ物',q:'かんぴょうの原料は？',o:['ユウガオ','ダイコン','キュウリ'],a:0,e:'ユウガオの実を干したもの。'},
+  {c:'食べ物',q:'「いくら」は何の卵？',o:['タラ','サケ','ニシン','トビウオ'],a:1,e:'サケ（マス）の卵。'},
+  {c:'食べ物',q:'「数の子」は何の卵？',o:['ニシン','タラ','サケ'],a:0,e:'ニシンの卵です。'},
+  {c:'食べ物',q:'チーズの主な原料は？',o:['卵','牛乳','小麦粉'],a:1,e:'牛などの乳。'},
+  {c:'食べ物',q:'こんにゃくの原料は？',o:['こんにゃく芋','さつま芋','じゃが芋'],a:0,e:'こんにゃく芋から作ります。'},
+  {c:'食べ物',q:'ワインの主な原料は？',o:['リンゴ','ブドウ','麦'],a:1,e:'ブドウを発酵させます。'},
+  {c:'食べ物',q:'「明太子」は何の卵？',o:['スケトウダラ','サケ','ニシン'],a:0,e:'スケトウダラの卵。'},
+  {c:'食べ物',q:'ポップコーンの原料は？',o:['米','トウモロコシ','大豆'],a:1,e:'爆裂種のトウモロコシ。'},
+  // 動物
+  {c:'動物',q:'カメレオンが体の色を変えられるのは本当？',o:['本当','うそ'],a:0,e:'皮膚の細胞で色を変えます。'},
+  {c:'動物',q:'クモの脚は何本？',o:['6本','8本','10本'],a:1,e:'クモは8本、昆虫は6本。'},
+  {c:'動物',q:'昆虫の脚は何本？',o:['4本','6本','8本'],a:1,e:'昆虫は6本。'},
+  {c:'動物',q:'タコの腕（足）は何本？',o:['6本','8本','10本'],a:1,e:'タコは8本、イカは10本。'},
+  {c:'動物',q:'イカの腕（足）は何本？',o:['8本','10本','12本'],a:1,e:'イカは10本。'},
+  {c:'動物',q:'クジラは何類？',o:['魚類','哺乳類','両生類'],a:1,e:'クジラは哺乳類。'},
+  {c:'動物',q:'カエルは何類？',o:['爬虫類','両生類','魚類'],a:1,e:'カエルは両生類。'},
+  {c:'動物',q:'パンダの主な食べ物は？',o:['竹','肉','魚','果物'],a:0,e:'ほぼ竹（ササ）を食べます。'},
+  {c:'動物',q:'陸上で一番速い動物は？',o:['ライオン','チーター','ウマ','ダチョウ'],a:1,e:'チーターは時速100km以上とも。'},
+  {c:'動物',q:'ペンギンは空を飛べる？',o:['飛べる','飛べない'],a:1,e:'翼はひれ状で泳ぐのに使います。'},
+  // ひらめき
+  {c:'ひらめき',q:'パンはパンでも食べられないパンは？',o:['フライパン','食パン','あんパン'],a:0,e:'定番のなぞなぞ！'},
+  {c:'ひらめき',q:'1、2、4、8、□ □に入るのは？',o:['10','12','16','32'],a:2,e:'2倍ずつ増えています。'},
+  {c:'ひらめき',q:'1、3、5、7、□ □に入るのは？',o:['8','9','10','11'],a:1,e:'奇数が並んでいます。'},
+  {c:'ひらめき',q:'月・火・水・木・□ □に入るのは？',o:['土','金','日'],a:1,e:'曜日の順番です。'},
+  {c:'ひらめき',q:'3人で6個のみかんを同じ数ずつ分けると1人何個？',o:['1個','2個','3個'],a:1,e:'6÷3＝2。'},
+  {c:'ひらめき',q:'時計の長針が1周すると何分？',o:['12分','30分','60分'],a:2,e:'長針1周＝60分。'},
+  {c:'ひらめき',q:'上は大水、下は大火事、なーんだ？',o:['お風呂','やかん','火山'],a:0,e:'昔のお風呂（五右衛門風呂）のなぞなぞ。'},
+  {c:'ひらめき',q:'10円玉を2枚と5円玉を1枚で合計いくら？',o:['15円','20円','25円'],a:2,e:'10＋10＋5＝25円。'},
+  {c:'ひらめき',q:'2、4、6、□、10 □に入るのは？',o:['7','8','9'],a:1,e:'2ずつ増えています。'},
+  {c:'ひらめき',q:'朝は4本足、昼は2本足、夜は3本足。なーんだ？',o:['人間','イヌ','イス'],a:0,e:'赤ちゃん→大人→杖をついたお年寄り。'}
+];
+
+/* ---------- アバター ---------- */
+// 提灯風の丸いアバター。色と顔文字キャラ
+DATA.avatars = [
+  {id:'tako',  name:'たこ',   bg:'#ff5a5f', glyph:'蛸'},
+  {id:'tori',  name:'とり',   bg:'#ffb020', glyph:'鳥'},
+  {id:'neko',  name:'ねこ',   bg:'#7c5cff', glyph:'猫'},
+  {id:'tanuki',name:'たぬき', bg:'#c27a3a', glyph:'狸'},
+  {id:'kitsune',name:'きつね',bg:'#ff8a3d', glyph:'狐'},
+  {id:'kappa', name:'かっぱ', bg:'#1ec8a5', glyph:'河'},
+  {id:'oni',   name:'おに',   bg:'#e8336b', glyph:'鬼'},
+  {id:'tsuki', name:'つき',   bg:'#3aa5ff', glyph:'月'},
+  {id:'sakura',name:'さくら', bg:'#ff7fb4', glyph:'桜'},
+  {id:'take',  name:'たけ',   bg:'#5cc35a', glyph:'竹'},
+  {id:'hoshi', name:'ほし',   bg:'#f5d33a', glyph:'星'},
+  {id:'kumo',  name:'くも',   bg:'#8fa3c7', glyph:'雲'}
+];
+
+/* ---------- ルーレットのイベント ---------- */
+DATA.bonusEvents = [
+  {id:'double', title:'得点2倍タイム！', desc:'次のミニゲームで獲得する得点が2倍になります。'},
+  {id:'underdog', title:'逆転のチャンス！', desc:'現在最下位のプレイヤー全員に＋80点！'},
+  {id:'luckydraw', title:'横丁くじ引き', desc:'ランダムに選ばれた1人に＋50点！'},
+  {id:'allstar', title:'横丁の大盤振る舞い', desc:'参加者全員に＋30点！'}
+];
+
+/* ---------- 裏切り者ミッション用：トークテーマ ---------- */
+DATA.talkThemes = [
+  '最近ハマっていること','行ってみたい旅行先','子どもの頃の夢','最近あったちょっといいこと',
+  '休日の理想の過ごし方','もし1億円あったら','好きなコンビニ商品','最近見た面白い動画・番組',
+  '学生時代の思い出','無人島に持っていくもの','今年中にやりたいこと','自分の意外な特技',
+  '人生で一番おいしかったもの','好きな季節とその理由','理想の朝の過ごし方'
+];
+
+/* =========================================================
+ *  CORE — ユーティリティ / タイマー / サウンド / ストア / 得点台帳 / UI
+ *  （ゲーム処理・得点処理・画面描画を分離。将来オンライン化する際は
+ *    Store と Score をサーバー同期層に差し替えられる構成）
+ * ========================================================= */
+'use strict';
+
+/* ---------- utils ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+let _uid = 0;
+const uid = p => `${p}_${Date.now().toString(36)}_${(++_uid).toString(36)}${rnd(1e4).toString(36)}`;
+const sleep = ms => new Promise(r => Timers.timeout(r, ms));
+/* 表記ゆれ吸収：カタカナ→ひらがな、全角英数→半角、小文字化、空白・記号除去 */
+function normalizeAnswer(s) {
+  return String(s || '').normalize('NFKC').toLowerCase()
+    .replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60))
+    .replace(/[\s・、。．，,.!！?？「」『』（）()〜~ー－-]/g, '')
+    .trim();
+}
+
+/* ---------- Timers（画面ごとに自動クリアして状態漏れを防ぐ） ---------- */
+const Timers = {
+  ids: new Set(), rafs: new Set(),
+  timeout(fn, ms) { const id = setTimeout(() => { this.ids.delete(id); fn(); }, ms); this.ids.add(id); return id; },
+  interval(fn, ms) { const id = setInterval(fn, ms); this.ids.add(id); return id; },
+  raf(fn) { const id = requestAnimationFrame(t => { this.rafs.delete(id); fn(t); }); this.rafs.add(id); return id; },
+  clear(id) { clearTimeout(id); clearInterval(id); this.ids.delete(id); },
+  clearAll() { this.ids.forEach(id => { clearTimeout(id); clearInterval(id); }); this.ids.clear(); this.rafs.forEach(cancelAnimationFrame); this.rafs.clear(); }
+};
+/* 残り時間カウントダウン。onTick(残り秒, 残り割合) / onEnd() */
+function countdown(sec, onTick, onEnd, { tickSound = true } = {}) {
+  const total = sec * 1000; let end = performance.now() + total; let lastWhole = Math.ceil(sec); let done = false; let paused = 0;
+  const step = () => {
+    if (done) return;
+    if (paused) return;
+    const left = Math.max(0, end - performance.now());
+    const whole = Math.ceil(left / 1000);
+    onTick(left / 1000, left / total);
+    if (whole !== lastWhole) { lastWhole = whole; if (tickSound && whole <= 5 && whole > 0) Sound.play(whole <= 3 ? 'tock' : 'tick'); }
+    if (left <= 0) { done = true; Timers.clear(id); onEnd(); }
+  };
+  const id = Timers.interval(step, 100); step();
+  return {
+    stop() { done = true; Timers.clear(id); },
+    finish() { if (done) return; done = true; Timers.clear(id); onEnd(); },
+    pause() { if (!paused) paused = performance.now(); },
+    resume() { if (paused) { end += performance.now() - paused; paused = 0; } },
+    get done() { return done; }
+  };
+}
+
+/* ---------- Sound（Web Audio APIで合成。音声ファイル不要） ---------- */
+const Sound = {
+  ctx: null, out: null, sfxBus: null, bgmBus: null,
+  sfxOn: true, bgmOn: false, bgmTimer: null,
+  ensure() {
+    try {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+        this.ctx = new AC();
+        this.out = this.ctx.createGain(); this.out.gain.value = .9; this.out.connect(this.ctx.destination);
+        this.sfxBus = this.ctx.createGain(); this.sfxBus.gain.value = .8; this.sfxBus.connect(this.out);
+        this.bgmBus = this.ctx.createGain(); this.bgmBus.gain.value = .22; this.bgmBus.connect(this.out);
+      }
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      return this.ctx;
+    } catch (e) { return null; }
+  },
+  tone(f, dur, o = {}) {
+    const c = this.ctx; const t = c.currentTime + (o.at || 0);
+    const osc = c.createOscillator(); const g = c.createGain();
+    osc.type = o.type || 'sine'; osc.frequency.setValueAtTime(f, t);
+    if (o.slide) osc.frequency.exponentialRampToValueAtTime(o.slide, t + dur);
+    const v = o.vol ?? .2;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + (o.attack || .006));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g); g.connect(o.bus || this.sfxBus); osc.start(t); osc.stop(t + dur + .02);
+  },
+  noise(dur, o = {}) {
+    const c = this.ctx; const t = c.currentTime + (o.at || 0);
+    const len = Math.max(1, Math.floor(c.sampleRate * dur));
+    const buf = c.createBuffer(1, len, c.sampleRate); const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = o.ftype || 'bandpass'; f.frequency.setValueAtTime(o.freq || 2000, t);
+    if (o.sweep) f.frequency.exponentialRampToValueAtTime(o.sweep, t + dur);
+    const g = c.createGain(); g.gain.setValueAtTime(o.vol ?? .2, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(o.bus || this.sfxBus); src.start(t); src.stop(t + dur + .02);
+  },
+  play(name) {
+    if (!this.sfxOn || !this.ensure()) return;
+    try {
+      const T = (f, d, o) => this.tone(f, d, o), N = (d, o) => this.noise(d, o);
+      switch (name) {
+        case 'click': T(720, .06, { type: 'square', vol: .05 }); break;
+        case 'tap': T(520, .09, { type: 'triangle', vol: .16, slide: 820 }); break;
+        case 'confirm': T(660, .09, { type: 'triangle', vol: .18 }); T(990, .16, { type: 'triangle', vol: .18, at: .08 }); break;
+        case 'pass': T(440, .1, { type: 'sine', vol: .16 }); T(554, .1, { type: 'sine', vol: .16, at: .09 }); T(659, .18, { type: 'sine', vol: .16, at: .18 }); break;
+        case 'correct': [523, 659, 784, 1047].forEach((f, i) => T(f, .2, { type: 'triangle', vol: .2, at: i * .07 })); break;
+        case 'wrong': T(220, .35, { type: 'sawtooth', vol: .12, slide: 110 }); break;
+        case 'tick': T(1250, .035, { type: 'square', vol: .045 }); break;
+        case 'tock': T(880, .09, { type: 'square', vol: .08 }); break;
+        case 'buzzer': T(160, .6, { type: 'square', vol: .12 }); T(165, .6, { type: 'sawtooth', vol: .06 }); break;
+        case 'drum': for (let i = 0; i < 26; i++) N(.07, { at: i * .06, freq: 300 + rnd(80), vol: .1 + i * .008, ftype: 'lowpass' }); break;
+        case 'reveal': N(.6, { freq: 6000, ftype: 'highpass', vol: .18 }); [392, 523, 659].forEach(f => T(f, .7, { type: 'triangle', vol: .14 })); break;
+        case 'fanfare': [[523, 0], [523, .12], [523, .24], [659, .36], [784, .6], [659, .78], [784, .9], [1047, 1.1]].forEach(([f, a]) => { T(f, .22, { type: 'square', vol: .07, at: a }); T(f, .3, { type: 'triangle', vol: .14, at: a }); }); break;
+        case 'spin': T(1500 + rnd(300), .025, { type: 'square', vol: .05 }); break;
+        case 'pop': N(.08, { freq: 3200, vol: .2 }); T(900, .07, { type: 'sine', vol: .12, slide: 1600 }); break;
+        case 'whoosh': N(.45, { freq: 400, sweep: 4000, vol: .14 }); break;
+        case 'ominous': [110, 116.5].forEach(f => T(f, 1.4, { type: 'sawtooth', vol: .07 })); T(55, 1.4, { type: 'sine', vol: .25 }); break;
+        case 'unanimous': [523, 659, 784, 1047, 1319].forEach((f, i) => T(f, .3, { type: 'triangle', vol: .17, at: i * .06 })); N(.5, { freq: 7000, ftype: 'highpass', vol: .1, at: .3 }); break;
+        case 'erase': N(.12, { freq: 1200, vol: .08 }); break;
+      }
+    } catch (e) { /* 音が鳴らなくてもゲームは継続 */ }
+  },
+  /* --- BGM：ゆるい横丁風ペンタトニック --- */
+  setBgm(on) { this.bgmOn = on; on ? this.bgmStart() : this.bgmStop(); },
+  bgmStart() {
+    if (!this.bgmOn || this.bgmTimer || !this.ensure()) return;
+    this.step = 0; this.nextT = this.ctx.currentTime + .12;
+    this.bgmTimer = setInterval(() => this._sched(), 70);
+  },
+  bgmStop() { clearInterval(this.bgmTimer); this.bgmTimer = null; },
+  _sched() {
+    const c = this.ctx; if (!c || c.state !== 'running') return;
+    const stepDur = 60 / 104 / 2;
+    while (this.nextT < c.currentTime + .25) { this._step(this.step, this.nextT - c.currentTime); this.nextT += stepDur; this.step = (this.step + 1) % 64; }
+  },
+  _step(s, at) {
+    const N = { D4: 293.66, E4: 329.63, F4: 369.99, A4: 440, B4: 493.88, D5: 587.33, E5: 659.25 };
+    const mel = ['A4', 0, 'B4', 'A4', 'F4', 0, 'E4', 0, 'D4', 0, 'E4', 'F4', 'A4', 0, 0, 0, 'B4', 0, 'D5', 'B4', 'A4', 0, 'F4', 0, 'E4', 0, 'F4', 'E4', 'D4', 0, 0, 0,
+      'F4', 0, 'A4', 0, 'B4', 0, 'A4', 'B4', 'D5', 0, 'B4', 0, 'A4', 0, 0, 0, 'B4', 'A4', 'F4', 0, 'E4', 'F4', 'A4', 0, 'E4', 0, 0, 'D4', 0, 0, 0, 0];
+    const roots = [73.42, 61.74, 49, 55, 73.42, 61.74, 49, 55];
+    const b = this.bgmBus; const m = mel[s];
+    if (m) { this.tone(N[m], .32, { type: 'triangle', vol: .2, at, bus: b }); this.tone(N[m] * 2, .12, { type: 'square', vol: .025, at, bus: b }); }
+    const bar = Math.floor(s / 8), pos = s % 8;
+    if (pos === 0 || pos === 4) this.tone(roots[bar] * (pos === 4 ? 2 : 1), .3, { type: 'triangle', vol: .32, at, bus: b });
+    if (pos % 2 === 1) this.noise(.03, { at, freq: 8000, ftype: 'highpass', vol: .05, bus: b });
+    if (pos === 2 || pos === 6) this.noise(.06, { at, freq: 1800, vol: .06, bus: b });
+  }
+};
+document.addEventListener('visibilitychange', () => {
+  if (!Sound.ctx) return;
+  if (document.hidden) Sound.ctx.suspend(); else if (Sound.bgmOn || Sound.sfxOn) Sound.ctx.resume();
+});
+
+/* ---------- Storage（失敗しても動作継続） ---------- */
+const Persist = {
+  KEY: 'donchan_yokocho_v1',
+  save(obj) { try { localStorage.setItem(this.KEY, JSON.stringify(obj)); } catch (e) { } },
+  load() { try { const s = localStorage.getItem(this.KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } },
+  clear() { try { localStorage.removeItem(this.KEY); } catch (e) { } }
+};
+
+/* ---------- Store：プレイヤーとセッション状態 ---------- */
+const Store = {
+  players: [],          // [{id, name, avatar}]
+  session: null,        // 得点・成績・履歴
+  settings: { sfx: true, bgm: false },
+  newSession() {
+    const s = { id: uid('ses'), scores: {}, wins: {}, stats: {}, games: {}, history: [], committed: {}, multiplier: 1, recent: [], rankTrail: {}, startedAt: Date.now() };
+    this.players.forEach(p => { s.scores[p.id] = 0; s.wins[p.id] = 0; s.stats[p.id] = {}; s.games[p.id] = {}; s.rankTrail[p.id] = []; });
+    this.session = s; this.save();
+  },
+  /* プレイヤー構成が変わってもセッションを壊さないよう補完 */
+  syncSession() {
+    if (!this.session) return this.newSession();
+    const s = this.session;
+    this.players.forEach(p => {
+      if (!(p.id in s.scores)) { s.scores[p.id] = 0; s.wins[p.id] = 0; s.stats[p.id] = {}; s.games[p.id] = {}; s.rankTrail[p.id] = []; }
+    });
+    this.save();
+  },
+  player(id) { return this.players.find(p => p.id === id); },
+  avatar(p) { return DATA.avatars.find(a => a.id === p.avatar) || DATA.avatars[0]; },
+  save() { Persist.save({ players: this.players, session: this.session, settings: this.settings }); },
+  load() {
+    const d = Persist.load(); if (!d) return false;
+    if (d.settings) this.settings = Object.assign(this.settings, d.settings);
+    if (Array.isArray(d.players) && d.players.length >= 3 && d.players.every(p => p && p.id && typeof p.name === 'string')) {
+      this.players = d.players; this.session = d.session || null; this.syncSession(); return true;
+    }
+    return false;
+  },
+  get hasProgress() { return this.session && this.session.history.length > 0; }
+};
+
+/* ---------- Score：得点台帳（roundIdで冪等。やり直しで二重加算しない） ---------- */
+const Score = {
+  /**
+   * @param roundId  各ゲーム開始時に発行される一意ID
+   * @param gameKey  'choice' など
+   * @param awards   {playerId: 点数}
+   * @param stats    {playerId: {statKey: 加算値}}
+   * @param opt      {title, noMultiplier}
+   */
+  commit(roundId, gameKey, awards, stats = {}, opt = {}) {
+    const s = Store.session;
+    if (s.committed[roundId]) return s.committed[roundId];   // 二重加算防止
+    const mult = opt.noMultiplier ? 1 : s.multiplier;
+    const before = this.ranking();
+    const final = {};
+    Store.players.forEach(p => { final[p.id] = Math.round((awards[p.id] || 0) * mult); });
+    Store.players.forEach(p => {
+      s.scores[p.id] += final[p.id];
+      const g = s.games[p.id][gameKey] || (s.games[p.id][gameKey] = { played: 0, points: 0 });
+      g.played++; g.points += final[p.id];
+      const st = stats[p.id] || {};
+      for (const k in st) s.stats[p.id][k] = (s.stats[p.id][k] || 0) + st[k];
+    });
+    // 勝利数：そのゲームの最高得点者（0点は除く・同点は全員）
+    const max = Math.max(...Object.values(final));
+    const winners = max > 0 ? Store.players.filter(p => final[p.id] === max).map(p => p.id) : [];
+    if (!opt.noWin) winners.forEach(id => s.wins[id]++);
+    if (!opt.noMultiplier && s.multiplier !== 1) s.multiplier = 1;
+    const after = this.ranking();
+    after.forEach(r => s.rankTrail[r.player.id].push(r.rank));
+    const rec = { roundId, gameKey, title: opt.title || gameKey, awards: final, mult, winners, at: Date.now(),
+      before: Object.fromEntries(before.map(r => [r.player.id, r.rank])) };
+    s.history.push(rec); s.committed[roundId] = rec;
+    if (!opt.noRecent) { s.recent.push(gameKey); if (s.recent.length > 6) s.recent.shift(); }
+    Store.save();
+    return rec;
+  },
+  /* 同点は同順位（1,1,3方式） */
+  ranking() {
+    const s = Store.session;
+    const arr = Store.players.map((p, i) => ({ player: p, score: s ? (s.scores[p.id] || 0) : 0, wins: s ? (s.wins[p.id] || 0) : 0, idx: i }))
+      .sort((a, b) => b.score - a.score || a.idx - b.idx);
+    arr.forEach((r, i) => { r.rank = (i > 0 && arr[i - 1].score === r.score) ? arr[i - 1].rank : i + 1; });
+    arr.forEach(r => { r.tie = arr.filter(x => x.rank === r.rank).length > 1; });
+    return arr;
+  },
+  /* 称号：実際の成績に基づいて付与（最大値かつ>0、同値なら全員） */
+  titles() {
+    const s = Store.session; const ps = Store.players; const out = [];
+    const st = (id, k) => (s.stats[id] && s.stats[id][k]) || 0;
+    const defs = [
+      { k: 'quizCorrect', t: 'クイズ王', why: v => `瞬間クイズで${v}問正解` },
+      { k: 'drawPts', t: 'お絵描き名人', why: v => `お絵描きバトルで合計${v}点` },
+      { k: 'schemer', t: '横丁の策士', why: v => `裏切り者として${v}回ミッション成功・逃げ切り` },
+      { k: 'detect', t: '横丁の名探偵', why: v => `裏切り者を${v}回見抜いた` },
+      { k: 'syncMatch', t: '以心伝心マスター', why: v => `以心伝心で${v}人と回答が一致` },
+      { k: 'minority', t: '孤高の個性派', why: v => `究極の二択で少数派に${v}回` }
+    ];
+    defs.forEach(d => {
+      const max = Math.max(0, ...ps.map(p => st(p.id, d.k)));
+      if (max <= 0) return;
+      const holders = ps.filter(p => st(p.id, d.k) === max);
+      if (holders.length === ps.length) return; // 全員同じ成績なら称号なし
+      ps.filter(p => st(p.id, d.k) === max).forEach(p => out.push({ pid: p.id, title: d.t, why: d.why(max) }));
+    });
+    // 奇跡の逆転王：途中の最低順位から最終順位までの上昇幅
+    if (s.history.length >= 2) {
+      const fin = this.ranking(); let best = 0; let who = [];
+      fin.forEach(r => {
+        const trail = s.rankTrail[r.player.id] || []; if (trail.length < 2) return;
+        const worst = Math.max(...trail.slice(0, -1)); const up = worst - r.rank;
+        if (up > best) { best = up; who = [{ r, worst }]; } else if (up === best && up > 0) who.push({ r, worst });
+      });
+      if (best >= 2 || (best >= 1 && who.some(w => w.r.rank === 1))) who.forEach(w => out.push({ pid: w.r.player.id, title: '奇跡の逆転王', why: `${w.worst}位から${w.r.rank}位へ浮上` }));
+    }
+    // 横丁の主役：勝利数最多
+    const mw = Math.max(0, ...ps.map(p => s.wins[p.id] || 0));
+    if (mw >= 2 && ps.some(p => (s.wins[p.id] || 0) < mw)) ps.filter(p => s.wins[p.id] === mw).forEach(p => out.push({ pid: p.id, title: '横丁の主役', why: `ミニゲームで${mw}回トップ` }));
+    return out;
+  }
+};
+
+/* ---------- SVG icons ---------- */
+const ICON = {
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  menu: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 01-10 0z"/><path d="M7 6H4a3 3 0 003 4M17 6h3a3 3 0 01-3 4M12 14v4M8 21h8"/></svg>',
+  lantern: (c = '#ff4d5e', t = '祭') => `<svg viewBox="0 0 60 100"><line x1="30" y1="0" x2="30" y2="12" stroke="#d9b36b" stroke-width="2"/><rect x="18" y="10" width="24" height="7" rx="2" fill="#2a1b10"/><ellipse cx="30" cy="52" rx="26" ry="36" fill="${c}"/><ellipse cx="30" cy="52" rx="26" ry="36" fill="url(#lg)" opacity=".55"/>${[30, 42, 54, 66, 76].map(y => `<path d="M6 ${y} Q30 ${y + 5} 54 ${y}" stroke="rgba(0,0,0,.18)" stroke-width="1.4" fill="none"/>`).join('')}<text x="30" y="62" text-anchor="middle" font-size="24" font-weight="900" fill="#1b0b0b" font-family="serif">${t}</text><rect x="18" y="86" width="24" height="7" rx="2" fill="#2a1b10"/><line x1="30" y1="93" x2="30" y2="100" stroke="#d9b36b" stroke-width="2"/><defs><radialGradient id="lg" cx=".35" cy=".3" r=".7"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs></svg>`,
+  crown: '<svg viewBox="0 0 64 44"><path d="M4 14l14 12L32 4l14 22 14-12-6 28H10z" fill="#ffd23f" stroke="#a5700a" stroke-width="2.5" stroke-linejoin="round"/><circle cx="32" cy="30" r="4" fill="#ff4d5e"/><circle cx="18" cy="32" r="3" fill="#2ee6c5"/><circle cx="46" cy="32" r="3" fill="#2ee6c5"/></svg>',
+  hand: '<svg viewBox="0 0 120 120" fill="none"><rect x="34" y="14" width="52" height="88" rx="10" fill="#1b2259" stroke="#ffd23f" stroke-width="4"/><rect x="42" y="26" width="36" height="58" rx="4" fill="#0a0c24"/><circle cx="60" cy="93" r="4" fill="#ffd23f"/><path d="M8 70c10-4 22-2 30 6M112 50c-10 4-22 2-30-6" stroke="#2ee6c5" stroke-width="5" stroke-linecap="round"/><path d="M14 60l-6 10 11 3M106 60l6-10-11-3" stroke="#2ee6c5" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  modes: {
+    choice: '<svg viewBox="0 0 48 48"><rect x="4" y="10" width="18" height="28" rx="5" fill="#fff"/><rect x="26" y="10" width="18" height="28" rx="5" fill="#1b1e4a"/><text x="13" y="30" text-anchor="middle" font-size="15" font-weight="900" fill="#e2335e">A</text><text x="35" y="30" text-anchor="middle" font-size="15" font-weight="900" fill="#3fb7ff">B</text></svg>',
+    draw: '<svg viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" rx="5" fill="#fffdf6"/><path d="M12 32c5-10 9 2 14-8s7 3 10-2" stroke="#ff4d5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M34 6l8 8-14 14-9 2 2-9z" fill="#1b1e4a"/></svg>',
+    traitor: '<svg viewBox="0 0 48 48"><circle cx="24" cy="18" r="10" fill="#1b1e4a"/><path d="M8 42c2-10 9-14 16-14s14 4 16 14z" fill="#1b1e4a"/><path d="M14 16h20" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="19" cy="16" r="2" fill="#ff4d5e"/><circle cx="29" cy="16" r="2" fill="#ff4d5e"/></svg>',
+    sync: '<svg viewBox="0 0 48 48"><circle cx="17" cy="24" r="12" fill="#fff" opacity=".9"/><circle cx="31" cy="24" r="12" fill="#1b1e4a" opacity=".85"/><path d="M19 22a5 5 0 0110 0c0 4-5 6-5 9" stroke="#ffd23f" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
+    quiz: '<svg viewBox="0 0 48 48"><path d="M26 4L10 28h12l-4 16 20-26H26z" fill="#fff"/></svg>',
+    roulette: '<svg viewBox="0 0 48 48"><circle cx="24" cy="26" r="17" fill="#fff"/><path d="M24 26V9a17 17 0 0114.7 8.5z" fill="#ff4d5e"/><path d="M24 26l14.7 8.5A17 17 0 0124 43z" fill="#2ee6c5"/><path d="M24 26V43A17 17 0 019.3 34.5z" fill="#ffd23f"/><circle cx="24" cy="26" r="4" fill="#1b1e4a"/><path d="M24 2l-4 7h8z" fill="#1b1e4a"/></svg>',
+    bonus: '<svg viewBox="0 0 48 48"><path d="M24 4l6 13 14 1-11 9 4 14-13-8-13 8 4-14L4 18l14-1z" fill="#fff"/></svg>'
+  }
+};
+const avatarHTML = (p, size = '') => { const a = Store.avatar(p); return `<span class="ava ${size}" style="--c:${a.bg}" aria-hidden="true">${a.glyph}</span>`; };
+const nameHTML = p => esc(p.name);
+
+/* ---------- UI：画面切替・モーダル・トースト・演出 ---------- */
+const UI = {
+  root: null, handlers: {}, screenNo: 0,
+  init() {
+    this.root = $('#app');
+    document.addEventListener('click', e => this._onClick(e));
+  },
+  _onClick(e) {
+    const el = e.target.closest('[data-act]'); if (!el) return;
+    if (el.disabled || el.classList.contains('disabled')) return;
+    const scope = el.closest('[data-scope]');
+    const map = scope && scope.dataset.scope === 'modal' ? this.modalHandlers : this.handlers;
+    const fn = map && map[el.dataset.act]; if (!fn) return;
+    // 連打防止：data-multi が無いボタンは1画面につき1回だけ反応
+    if (!('multi' in el.dataset)) { if (el.dataset.used) return; el.dataset.used = '1'; }
+    if (el.dataset.sfx !== 'none') Sound.play(el.dataset.sfx || 'click');
+    e.preventDefault();
+    try { fn(el.dataset, el, e); } catch (err) { console.error(err); UI.toast('エラーが発生しました。ホームに戻ります'); App.home(); }
+  },
+  /** 画面を描画。前画面のタイマーはすべて破棄される */
+  show(html, handlers = {}, opt = {}) {
+    Timers.clearAll();
+    this.closeModal();
+    this.handlers = handlers; this.screenNo++;
+    this.root.innerHTML = `<main class="screen ${opt.wide ? 'wide' : ''} ${opt.cls || ''}">${html}</main>`;
+    window.scrollTo(0, 0);
+    if (opt.mount) opt.mount(this.root.firstElementChild);
+    return this.root.firstElementChild;
+  },
+  modalHandlers: {},
+  modal(html, handlers = {}, { dismiss = true } = {}) {
+    this.closeModal();
+    const back = document.createElement('div'); back.className = 'modal-back'; back.id = 'modal';
+    back.innerHTML = `<div class="modal" data-scope="modal" role="dialog" aria-modal="true">${html}</div>`;
+    if (dismiss) back.addEventListener('click', e => { if (e.target === back) this.closeModal(); });
+    document.body.appendChild(back); this.modalHandlers = handlers;
+    return back;
+  },
+  closeModal() { const m = $('#modal'); if (m) m.remove(); this.modalHandlers = {}; },
+  confirm(title, msg, ok = 'はい', cancel = 'キャンセル', danger = true) {
+    return new Promise(res => {
+      this.modal(`<h2>${esc(title)}</h2><p>${msg}</p><div class="btn-row"><button class="btn ghost sm" data-act="no">${esc(cancel)}</button><button class="btn sm ${danger ? '' : 'teal'}" data-act="yes">${esc(ok)}</button></div>`,
+        { yes: () => { this.closeModal(); res(true); }, no: () => { this.closeModal(); res(false); } });
+      $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') res(false); });
+    });
+  },
+  toast(msg, ms = 2000) {
+    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(this._tt); this._tt = setTimeout(() => t.classList.remove('show'), ms);
+  },
+  curtain(text) {
+    return new Promise(res => {
+      const c = $('#curtain'); c.innerHTML = `<div class="ct">${esc(text)}</div>`;
+      c.classList.remove('on'); void c.offsetWidth; c.classList.add('on');
+      Sound.play('whoosh');
+      setTimeout(res, 420); setTimeout(() => c.classList.remove('on'), 950);
+    });
+  },
+  /* 紙吹雪（独自のrAFで動作、画面遷移後も自然に消える） */
+  confetti(ms = 2600, burst = 160) {
+    const cv = $('#confetti'); const ctx = cv.getContext('2d');
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const cols = ['#ff4d5e', '#ffd23f', '#2ee6c5', '#a46bff', '#ff6fb5', '#4fb3ff', '#ff9a3c'];
+    const parts = this._conf = (this._conf || []).concat(Array.from({ length: burst }, () => ({
+      x: innerWidth * (.2 + Math.random() * .6), y: innerHeight * .35, vx: (Math.random() - .5) * 12, vy: -6 - Math.random() * 10,
+      r: 4 + Math.random() * 6, c: pick(cols), a: Math.random() * 6, va: (Math.random() - .5) * .4, life: ms + Math.random() * 800, shape: rnd(3)
+    })));
+    if (this._confRunning) return; this._confRunning = true;
+    let last = performance.now();
+    const loop = now => {
+      const dt = Math.min(40, now - last); last = now;
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      for (const p of parts) {
+        p.vy += .32 * dt / 16; p.vx *= .99; p.x += p.vx * dt / 16; p.y += p.vy * dt / 16; p.a += p.va; p.life -= dt;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 500));
+        if (p.shape === 0) ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); else if (p.shape === 1) { ctx.beginPath(); ctx.arc(0, 0, p.r / 1.6, 0, 7); ctx.fill(); } else { ctx.fillRect(-p.r / 3, -p.r, p.r / 1.5, p.r * 2); }
+        ctx.restore();
+      }
+      for (let i = parts.length - 1; i >= 0; i--) if (parts[i].life <= 0 || parts[i].y > innerHeight + 40) parts.splice(i, 1);
+      if (parts.length) requestAnimationFrame(loop); else { this._confRunning = false; ctx.clearRect(0, 0, innerWidth, innerHeight); }
+    };
+    requestAnimationFrame(loop);
+  },
+  soundToggles() {
+    return `<button class="toggle ${Sound.sfxOn ? 'on' : ''}" data-act="toggleSfx" data-multi data-sfx="none"><span class="dot"></span>効果音</button>
+            <button class="toggle ${Sound.bgmOn ? 'on' : ''}" data-act="toggleBgm" data-multi data-sfx="none"><span class="dot"></span>BGM</button>`;
+  },
+  soundHandlers() {
+    return {
+      toggleSfx: (d, el) => { Sound.sfxOn = !Sound.sfxOn; Store.settings.sfx = Sound.sfxOn; Store.save(); $$('[data-act=toggleSfx]').forEach(b => b.classList.toggle('on', Sound.sfxOn)); Sound.play('tap'); },
+      toggleBgm: (d, el) => { Sound.setBgm(!Sound.bgmOn); Store.settings.bgm = Sound.bgmOn; Store.save(); $$('[data-act=toggleBgm]').forEach(b => b.classList.toggle('on', Sound.bgmOn)); Sound.play('tap'); }
+    };
+  },
+  progressDots(total, idx) {
+    return `<div class="progress-dots">${Array.from({ length: total }, (_, i) => `<i class="${i < idx ? 'done' : i === idx ? 'now' : ''}"></i>`).join('')}</div>`;
+  },
+  /** 端末受け渡し画面（前の人の回答は一切表示しない） */
+  pass(player, { msg = '端末をこの人に渡してください。<br>ほかの人は画面を見ないでね！', btn = null, shield = '回答は非表示になっています', head = '', dots = '' } = {}) {
+    return `${head}<div class="pass">
+      ${dots}
+      ${avatarHTML(player, 'xl')}
+      <div class="who">${nameHTML(player)}<span style="font-size:.6em">さん</span></div>
+      <div class="msg">${msg}</div>
+      ${shield ? `<div class="shield">${ICON.eye.replace('<svg', '<svg width="18" height="18"')} ${esc(shield)}</div>` : ''}
+      <button class="btn yellow" data-act="ready" data-sfx="pass">${btn || `${nameHTML(player)}です、準備OK！`}</button>
+    </div>`;
+  }
+};
+
+/* =========================================================
+ *  GAMES — ミニゲームごとの処理
+ *  各ゲームは run(G) を持ち、G.show() で画面を出し、
+ *  終了時に G.finish(awards, stats, summaryHTML) を呼ぶ。
+ *  得点の確定は Score.commit が1回だけ行う（やり直し時は未確定のまま破棄）。
+ * ========================================================= */
+'use strict';
+
+/* セッション内でお題がかぶりにくいように取り出す */
+function drawFromPool(poolKey, items, n, filter = () => true) {
+  const s = Store.session; s.used = s.used || {};
+  const used = new Set(s.used[poolKey] || []);
+  let idx = items.map((_, i) => i).filter(i => filter(items[i]));
+  let fresh = idx.filter(i => !used.has(i));
+  if (fresh.length < n) { idx.forEach(i => used.delete(i)); fresh = idx; }
+  const chosen = shuffle(fresh).slice(0, n);
+  chosen.forEach(i => used.add(i)); s.used[poolKey] = Array.from(used); Store.save();
+  return chosen.map(i => items[i]);
+}
+/* 開始プレイヤーを毎回ずらす */
+function rotatedPlayers(offsetKey) {
+  const s = Store.session; s.rot = s.rot || {};
+  const k = s.rot[offsetKey] = ((s.rot[offsetKey] || 0) + 1) % Store.players.length;
+  return Store.players.slice(k).concat(Store.players.slice(0, k));
+}
+const pointsList = (pts) => {
+  const ps = Store.players.slice().sort((a, b) => (pts[b.id] || 0) - (pts[a.id] || 0));
+  return `<div class="award-list">${ps.map((p, i) => `<div class="award" style="animation-delay:${i * .05}s">${avatarHTML(p, 'sm')}<div class="nm">${nameHTML(p)}</div><div class="pt ${(pts[p.id] || 0) ? '' : 'zero'}">+${pts[p.id] || 0}</div></div>`).join('')}</div>`;
+};
+const addPts = (acc, add) => { for (const k in add) acc[k] = (acc[k] || 0) + add[k]; return acc; };
+
+const GAMES = {};
+
+/* =========================================================
+ *  1. 究極の二択酒場
+ * ========================================================= */
+GAMES.choice = {
+  key: 'choice', title: '究極の二択酒場', color: '#ff4d5e', star: '看板',
+  desc: '正解のない究極の二択。全員こっそり選んで一斉公開！ 理由トークで盛り上がろう。',
+  time: '1お題 約1分', players: '3〜6人',
+  rules: [
+    '画面に究極の二択のお題が出ます。',
+    '端末を順番に回して、1人ずつこっそり A か B を選びます（前の人の答えは見えません）。',
+    '全員そろったら一斉に公開！ 多数派・少数派がわかります。',
+    '「なんでそっち!?」と理由を話し合うのがこのゲームの醍醐味。どちらが正解ということはありません。',
+    'ボーナス設定で、少数派や多数派にポイントを付けられます。'
+  ],
+  options: [
+    { key: 'count', label: 'お題の数', type: 'seg', choices: [[1, '1問'], [3, '3問'], [5, '5問']], def: 3 },
+    { key: 'bonus', label: 'ボーナスポイント', type: 'seg', choices: [['minority', '少数派に'], ['majority', '多数派に'], ['none', 'なし']], def: 'minority' },
+    { key: 'genres', label: 'ジャンル（複数OK）', type: 'multi', choices: Object.entries(DATA.choiceGenres), def: Object.keys(DATA.choiceGenres) }
+  ],
+  run(G) {
+    const set = G.settings;
+    const topics = drawFromPool('choice', DATA.choices, set.count, c => set.genres.includes(c[0]));
+    const st = { qi: 0, topics, answers: {}, order: [], total: {}, stats: {}, log: [] };
+
+    const topicCard = (t, small) => `<div class="topic-card"><span class="genre">${esc(DATA.choiceGenres[t[0]])}</span>
+      <div class="q" ${small ? 'style="font-size:16px"' : ''}>どっちを選ぶ？</div>
+      ${small ? '' : `<div class="vs-wrap" style="margin-top:12px"><div class="rbar a"><div class="lab"><b>A：${esc(t[1])}</b></div></div><div class="vs">VS</div><div class="rbar b"><div class="lab"><b>B：${esc(t[2])}</b></div></div></div>`}</div>`;
+    const chip = () => `<span class="chip">お題 ${st.qi + 1}/${topics.length}</span>`;
+
+    const intro = () => {
+      st.answers = {}; st.order = rotatedPlayers('choice');
+      const t = topics[st.qi];
+      G.show(`${topicCard(t)}
+        <p class="lead center mt16">全員が<b style="color:var(--yellow)">こっそり</b> A か B を選びます。<br>端末を順番に回してね！</p>
+        <div class="footer-actions"><button class="btn" data-act="go" data-sfx="confirm">回答スタート！</button></div>`,
+        { go: () => pass(0) }, { chip: chip() });
+    };
+    const pass = (i, prev) => {
+      const p = st.order[i];
+      G.show(UI.pass(p, {
+        msg: prev ? `${nameHTML(prev)}さんの回答を受け付けました。<br>端末を <b style="color:var(--ink)">${nameHTML(p)}さん</b> に渡してください。` : undefined,
+        dots: UI.progressDots(st.order.length, i)
+      }) + (prev ? `<button class="btn ghost sm" data-act="redo">← ${nameHTML(prev)}さん：今の回答を選び直す</button>` : ''),
+        { ready: () => answer(i), redo: () => { delete st.answers[prev.id]; answer(i - 1); } }, { chip: chip() });
+    };
+    const answer = (i) => {
+      const p = st.order[i]; const t = topics[st.qi];
+      G.show(`<div class="row" style="justify-content:center;margin-bottom:10px">${avatarHTML(p, 'sm')}<b style="font-size:18px">${nameHTML(p)}さんの番</b></div>
+        <div class="topic-card" style="padding:12px"><span class="genre">${esc(DATA.choiceGenres[t[0]])}</span><div class="q" style="font-size:17px;margin-top:4px">どっちを選ぶ？ タップで決定</div></div>
+        <div class="vs-wrap">
+          <button class="choice a" data-act="pick" data-v="A" data-sfx="confirm"><span class="tag">A</span>${esc(t[1])}</button>
+          <div class="vs">VS</div>
+          <button class="choice b" data-act="pick" data-v="B" data-sfx="confirm"><span class="tag">B</span>${esc(t[2])}</button>
+        </div>`,
+        {
+          pick: d => {
+            st.answers[p.id] = d.v;
+            if (i + 1 < st.order.length) pass(i + 1, p); else allDone(p);
+          }
+        }, { chip: chip() });
+    };
+    const allDone = (last) => {
+      G.show(`<div class="pass"><div class="who" style="font-size:30px">全員の回答が<br>そろいました！</div>
+        <div class="msg">端末をテーブルの真ん中に置いて、<br>みんなで結果を見よう！</div>
+        <button class="btn yellow" data-act="reveal" data-sfx="drum">結果を公開！</button>
+        <button class="btn ghost sm" data-act="redo">← ${nameHTML(last)}さん：今の回答を選び直す</button></div>`,
+        { reveal: drum, redo: () => { delete st.answers[last.id]; answer(st.order.length - 1); } }, { chip: chip() });
+    };
+    const drum = () => {
+      G.show(`<div class="drum"><div><div class="big">ドゥルルル…</div><p class="dim mt16">A派とB派は…</p></div></div>`, {}, { chip: chip() });
+      Timers.timeout(result, 1700);
+    };
+    const result = () => {
+      const t = topics[st.qi];
+      const A = st.order.filter(p => st.answers[p.id] === 'A'), B = st.order.filter(p => st.answers[p.id] === 'B');
+      const n = st.order.length;
+      const unanimous = A.length === 0 || B.length === 0;
+      const tie = A.length === B.length;
+      const minority = unanimous || tie ? [] : (A.length < B.length ? A : B);
+      const majority = unanimous || tie ? [] : (A.length > B.length ? A : B);
+      const lone = minority.length === 1;
+      const pts = {}; const stats = {};
+      if (set.bonus !== 'none' && unanimous) st.order.forEach(p => pts[p.id] = 50);
+      if (set.bonus === 'minority' && minority.length) minority.forEach(p => pts[p.id] = lone ? 150 : 100);
+      if (set.bonus === 'majority' && majority.length) majority.forEach(p => pts[p.id] = 60);
+      minority.forEach(p => stats[p.id] = { minority: 1 });
+      addPts(st.total, pts); for (const k in stats) st.stats[k] = { minority: ((st.stats[k] || {}).minority || 0) + 1 };
+      st.log.push({ t, a: A.length, b: B.length });
+
+      const label = side => unanimous ? (side.length ? '<span class="badge">全員一致</span>' : '') : tie ? '<span class="badge">同数</span>' : side === majority ? '<span class="badge">多数派</span>' : '<span class="badge minor">少数派</span>';
+      const bar = (cls, letter, text, list) => `<div class="rbar ${cls}"><div class="fill" data-w="${n ? list.length / n * 100 : 0}"></div>
+        <div class="lab"><b>${letter}：${esc(text)} ${label(list)}</b><span class="cnt">${list.length}<small style="font-size:14px">人</small></span></div>
+        <div class="who">${list.map((p, i) => `<span style="animation-delay:${.4 + i * .12}s">${avatarHTML(p, 'xs')}${nameHTML(p)}</span>`).join('') || '<span class="dim small" style="background:none">だれもいない…</span>'}</div></div>`;
+      let special = '';
+      if (unanimous) special = `<div class="special"><b>全員一致！！</b>みんなの心がひとつに。${set.bonus !== 'none' ? '全員に＋50点！' : ''}</div>`;
+      else if (lone) special = `<div class="special"><b>孤高の一匹狼</b>${nameHTML(minority[0])}さんだけが別の道へ！ 理由を聞かせて！${set.bonus === 'minority' ? '＋150点！' : ''}</div>`;
+      else if (tie) special = `<div class="special"><b>真っ二つ！</b>きれいに意見が分かれました。白熱トークの予感！</div>`;
+      const talkTarget = lone ? `${nameHTML(minority[0])}さん、なぜそっちを選んだ？` : unanimous ? 'みんなが同じ方を選んだ決め手は？' : '少数派の人から理由を聞いてみよう！';
+      const isLast = st.qi + 1 >= topics.length;
+      G.show(`<div class="topic-card" style="padding:12px"><span class="genre">${esc(DATA.choiceGenres[t[0]])}</span></div>
+        <div class="result-bars mt16">${bar('a', 'A', t[1], A)}${bar('b', 'B', t[2], B)}</div>
+        ${special ? `<div class="mt16">${special}</div>` : ''}
+        <div class="panel mt16"><h3>理由トーク</h3><p class="lead" style="margin:0">${talkTarget}</p>
+          <div id="talk" class="mt8"><button class="btn ghost sm" data-act="talk">30秒トークタイマー</button></div></div>
+        ${Object.keys(pts).length ? `<div class="panel mt16"><h3>このお題のポイント</h3>${pointsList(pts)}</div>` : ''}
+        <div class="footer-actions"><button class="btn ${isLast ? 'yellow' : ''}" data-act="next">${isLast ? '結果まとめへ' : '次のお題へ'}</button></div>`,
+        {
+          talk: () => {
+            const box = $('#talk'); box.innerHTML = `<div class="timer-bar"><i></i></div><div class="center mt8" style="font-family:var(--font-head);font-size:28px" id="tt">30</div>`;
+            countdown(30, (l, f) => { const i = $('#talk i'); if (i) i.style.transform = `scaleX(${f})`; const tt = $('#tt'); if (tt) tt.textContent = Math.ceil(l); },
+              () => { Sound.play('buzzer'); box.innerHTML = '<p class="center" style="font-weight:900;color:var(--yellow)">トーク終了！</p>'; });
+          },
+          next: () => { if (isLast) finish(); else { st.qi++; intro(); } }
+        }, {
+          chip: chip(), mount: () => {
+            Sound.play(unanimous ? 'unanimous' : 'reveal');
+            if (unanimous || lone) UI.confetti(1600, 90);
+            Timers.timeout(() => $$('.rbar .fill').forEach(f => f.style.width = f.dataset.w + '%'), 60);
+          }
+        });
+    };
+    const finish = () => {
+      const summary = `<div class="stack">${st.log.map(l => `<div class="award"><div class="nm">${esc(l.t[1])} <small>vs ${esc(l.t[2])}</small></div><div class="pt" style="font-size:16px;color:var(--ink)">A ${l.a} : ${l.b} B</div></div>`).join('')}</div>`;
+      G.finish(st.total, st.stats, summary);
+    };
+    intro();
+  }
+};
+
+/* =========================================================
+ *  2. お絵描きバトル
+ * ========================================================= */
+/* お絵描きパッド：線は0〜1の正規化座標で保持し、リサイズ・回転時に描き直す */
+function DrawPad(box) {
+  const cv = document.createElement('canvas'); box.appendChild(cv);
+  const ctx = cv.getContext('2d');
+  const PAPER = '#fffdf6';
+  const pad = { strokes: [], color: '#222222', width: 1, eraser: false, enabled: true };
+  const WIDTHS = [0.008, 0.018, 0.036];
+  let W = 0, H = 0, cur = null, rect = null;
+  const lw = s => WIDTHS[s.w] * W;
+  function resize() {
+    const r = box.getBoundingClientRect(); if (!r.width) return;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); redraw();
+  }
+  function strokePath(c, s, w, h, scale) {
+    c.strokeStyle = s.e ? PAPER : s.c; c.fillStyle = c.strokeStyle; c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = WIDTHS[s.w] * w * (s.e ? 2.2 : 1);
+    const p = s.p;
+    if (p.length === 1) { c.beginPath(); c.arc(p[0][0] * w, p[0][1] * h, c.lineWidth / 2, 0, Math.PI * 2); c.fill(); return; }
+    c.beginPath(); c.moveTo(p[0][0] * w, p[0][1] * h);
+    for (let i = 1; i < p.length - 1; i++) { const mx = (p[i][0] + p[i + 1][0]) / 2, my = (p[i][1] + p[i + 1][1]) / 2; c.quadraticCurveTo(p[i][0] * w, p[i][1] * h, mx * w, my * h); }
+    const l = p[p.length - 1]; c.lineTo(l[0] * w, l[1] * h); c.stroke();
+  }
+  function redraw() { ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H); pad.strokes.forEach(s => strokePath(ctx, s, W, H)); if (cur) strokePath(ctx, cur, W, H); }
+  const pos = e => [Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)), Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height))];
+  cv.addEventListener('pointerdown', e => {
+    if (!pad.enabled || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    e.preventDefault(); rect = cv.getBoundingClientRect();
+    try { cv.setPointerCapture(e.pointerId); } catch (_) { }
+    cur = { c: pad.color, w: pad.width, e: pad.eraser, p: [pos(e)], id: e.pointerId }; redraw();
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!cur || e.pointerId !== cur.id) return; e.preventDefault();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    (evs.length ? evs : [e]).forEach(ev => cur.p.push(pos(ev)));
+    // 直近の区間だけ追加描画（軽量）
+    const p = cur.p, n = p.length; if (n < 2) return;
+    ctx.strokeStyle = cur.e ? PAPER : cur.c; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = WIDTHS[cur.w] * W * (cur.e ? 2.2 : 1);
+    ctx.beginPath(); const from = Math.max(0, n - 1 - evs.length); ctx.moveTo(p[from][0] * W, p[from][1] * H);
+    for (let i = from + 1; i < n; i++) ctx.lineTo(p[i][0] * W, p[i][1] * H); ctx.stroke();
+  });
+  const end = e => { if (!cur || (e && e.pointerId !== cur.id)) return; pad.strokes.push(cur); cur = null; redraw(); };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end); cv.addEventListener('lostpointercapture', end);
+  cv.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  const ro = window.ResizeObserver ? new ResizeObserver(resize) : null; if (ro) ro.observe(box); else window.addEventListener('resize', resize);
+  resize();
+  pad.undo = () => { pad.strokes.pop(); redraw(); };
+  pad.clear = () => { pad.strokes = []; redraw(); };
+  pad.stop = () => { pad.enabled = false; if (cur) end(); if (ro) ro.disconnect(); else window.removeEventListener('resize', resize); };
+  pad.isEmpty = () => pad.strokes.filter(s => !s.e).length === 0;
+  pad.toImage = (size = 520) => {
+    const c2 = document.createElement('canvas'); c2.width = c2.height = size; const x = c2.getContext('2d');
+    x.fillStyle = PAPER; x.fillRect(0, 0, size, size); pad.strokes.forEach(s => strokePath(x, s, size, size));
+    return c2.toDataURL('image/png');
+  };
+  pad.resize = resize;
+  return pad;
+}
+
+GAMES.draw = {
+  key: 'draw', title: 'お絵描きバトル', color: '#2ee6c5',
+  desc: 'お題を指やマウスで描いて、みんなに当ててもらおう。画力より発想力！',
+  time: '1人 約1分', players: '3〜6人',
+  rules: [
+    '描く人だけがお題を見られます（1回だけお題チェンジOK）。',
+    '制限時間内にキャンバスに絵を描きます。文字や数字を書くのは禁止！',
+    '完成した絵をみんなに見せて、何を描いたか当ててもらいます。',
+    '正解した人に＋100点、描いた人には正解者1人につき＋50点。全員正解ならさらに＋50点！'
+  ],
+  options: [
+    { key: 'drawers', label: '描く人', type: 'seg', choices: [['all', '全員1回ずつ'], ['two', '2人だけ（短め）']], def: 'all' },
+    { key: 'time', label: '制限時間', type: 'seg', choices: [[30, '30秒'], [45, '45秒'], [60, '60秒']], def: 45 },
+    { key: 'mode', label: '回答方法', type: 'seg', choices: [['voice', '声で答える'], ['input', '順番に入力']], def: 'voice' }
+  ],
+  colors: ['#222222', '#e53945', '#ff9a1f', '#f5c400', '#2fb34a', '#1e7bff', '#8a4dff', '#8b5a2b'],
+  run(G) {
+    const set = G.settings; const self = this;
+    const order = rotatedPlayers('draw');
+    const drawers = set.drawers === 'two' ? order.slice(0, 2) : order;
+    const words = drawFromPool('draw', DATA.drawWords, drawers.length + 4);
+    const st = { di: 0, total: {}, stats: {}, arts: [], spare: words.slice(drawers.length) };
+    const chip = () => `<span class="chip">${st.di + 1}/${drawers.length}人目</span>`;
+
+    const pass = () => {
+      const p = drawers[st.di];
+      st.word = words[st.di]; st.changed = false;
+      G.show(UI.pass(p, { msg: `${nameHTML(p)}さんが描く番です。<br>お題は${nameHTML(p)}さんにだけ表示されます。`, shield: 'ほかの人は画面を見ないでね', dots: UI.progressDots(drawers.length, st.di) }),
+        { ready: secret }, { chip: chip() });
+    };
+    const secret = () => {
+      const w = st.word;
+      G.show(`<div class="pass"><p class="dim" style="margin:0">あなたのお題は…</p>
+        <div class="secret-word" style="width:100%;max-width:360px"><small>${esc(DATA.drawGenres[w[0]])}</small><b>${esc(w[1])}</b></div>
+        <p class="msg">制限時間は <b style="color:var(--yellow)">${set.time}秒</b>。<br>文字や数字は書かないでね！</p>
+        <button class="btn teal" data-act="start" data-sfx="confirm">描き始める！</button>
+        ${st.changed ? '<p class="note">お題チェンジは使用済み</p>' : '<button class="btn ghost sm" data-act="change">お題をチェンジ（1回だけ）</button>'}</div>`,
+        {
+          start: canvas,
+          change: () => { st.changed = true; st.word = st.spare.shift() || drawFromPool('draw', DATA.drawWords, 1)[0]; secret(); }
+        }, { chip: chip() });
+    };
+    const canvas = () => {
+      const p = drawers[st.di];
+      const scr = G.show(`<div class="draw-wrap">
+        <div class="row" style="justify-content:space-between"><span class="mini-word">お題：${esc(st.word[1])}</span><span class="chip" id="sec">${set.time}秒</span></div>
+        <div class="timer-bar" id="tb"><i></i></div>
+        <div class="canvas-box" id="cbox" style="width:min(100%,56dvh,560px)"></div>
+        <div class="tools">
+          <div class="palette">${self.colors.map((c, i) => `<button data-act="color" data-multi data-sfx="none" data-c="${c}" class="${i === 0 ? 'on' : ''}" style="background:${c}" aria-label="色${i + 1}"></button>`).join('')}</div>
+          <div class="toolrow">
+            <button class="w" data-act="width" data-multi id="wbtn"><i style="width:10px;height:10px"></i>太さ</button>
+            <button data-act="eraser" data-multi id="ebtn">消しゴム</button>
+            <button data-act="undo" data-multi>1つ戻す</button>
+            <button data-act="clear" data-multi>全消し</button>
+          </div>
+        </div>
+        <button class="btn yellow" data-act="done" data-sfx="confirm">完成！</button></div>`,
+        {
+          color: (d, el) => { pad.color = d.c; pad.eraser = false; $$('.palette button').forEach(b => b.classList.toggle('on', b === el)); $('#ebtn').classList.remove('on'); Sound.play('click'); },
+          width: () => { pad.width = (pad.width + 1) % 3; const s = [6, 10, 16][pad.width]; $('#wbtn i').style.cssText = `width:${s}px;height:${s}px`; },
+          eraser: (d, el) => { pad.eraser = !pad.eraser; el.classList.toggle('on', pad.eraser); },
+          undo: () => pad.undo(),
+          clear: () => { pad.clear(); Sound.play('erase'); },
+          done: () => { if (pad.isEmpty()) { UI.toast('まだ何も描かれていません！'); $('[data-act=done]').dataset.used = ''; return; } endDraw(false); }
+        }, { chip: chip() });
+      const pad = DrawPad($('#cbox'));
+      const timer = countdown(set.time, (l, f) => {
+        const tb = $('#tb'); if (!tb) return; tb.querySelector('i').style.transform = `scaleX(${f})`; tb.classList.toggle('warn', l <= 10);
+        $('#sec').textContent = Math.ceil(l) + '秒';
+      }, () => endDraw(true));
+      let ended = false;
+      const endDraw = (timeup) => {
+        if (ended) return; ended = true; timer.stop(); pad.stop();
+        st.img = pad.toImage(); st.drawer = p;
+        Sound.play(timeup ? 'buzzer' : 'pop');
+        G.show(`<div class="pass"><div class="who" style="font-size:34px">${timeup ? 'タイムアップ！' : 'できた！'}</div>
+          <div class="art" style="width:min(70vw,260px)"><img src="${st.img}" alt="${nameHTML(p)}さんの絵"></div>
+          <p class="msg">お題は隠しました。<br>みんなに絵を見せよう！</p>
+          <button class="btn yellow" data-act="go">${set.mode === 'voice' ? 'みんなで当てる！' : '順番に回答する'}</button></div>`,
+          { go: set.mode === 'voice' ? guessVoice : () => guessInputPass(0) }, { chip: chip() });
+      };
+      void scr;
+    };
+    const guessers = () => order.filter(x => x.id !== drawers[st.di].id);
+
+    /* --- 声で答える方式 --- */
+    const guessVoice = () => {
+      G.show(`<div class="art" style="width:min(100%,52dvh,520px);margin:0 auto"><img src="${st.img}" alt="絵"></div>
+        <p class="lead center mt16">これは何の絵？ <b style="color:var(--yellow)">思いついたら声に出して答えよう！</b><br><span class="dim small">${nameHTML(st.drawer)}さんは正解が出たら教えてね</span></p>
+        <div class="timer-bar mt8" id="gt"><i></i></div>
+        <div class="footer-actions"><button class="btn" data-act="ans" data-sfx="reveal">正解を発表</button></div>`,
+        { ans: () => reveal() }, {
+          chip: chip(), mount: () => countdown(30, (l, f) => { const i = $('#gt i'); if (i) i.style.transform = `scaleX(${f})`; }, () => { }, { tickSound: true })
+        });
+    };
+    const reveal = (inputGuesses) => {
+      const gs = guessers(); const chosen = new Set();
+      if (inputGuesses) gs.forEach(g => { if (inputGuesses[g.id] && inputGuesses[g.id].ok) chosen.add(g.id); });
+      const render = () => `<div class="row" style="gap:14px;align-items:center">
+          <div class="art" style="width:38%;flex:none"><img src="${st.img}" alt="絵"></div>
+          <div><p class="dim" style="margin:0">正解は…</p><div style="font-family:var(--font-head);font-size:clamp(26px,7vw,36px);line-height:1.2;color:var(--yellow)">${esc(st.word[1])}</div><p class="small dim" style="margin:4px 0 0">${nameHTML(st.drawer)}さんの作品</p></div></div>
+        <div class="panel mt16"><h3>${inputGuesses ? '回答の判定（タップで変更できます）' : '正解した人をタップ'}</h3>
+          <div class="pick-grid" ${inputGuesses ? 'style="grid-template-columns:1fr"' : ''}>${gs.map(g => `<button class="pick ${chosen.has(g.id) ? 'on' : ''}" data-act="toggle" data-multi data-id="${g.id}">${avatarHTML(g, 'sm')}<span style="min-width:0">${nameHTML(g)}${inputGuesses ? `<br><small class="dim">「${esc(inputGuesses[g.id].text || '（わからない）')}」</small>` : ''}</span></button>`).join('')}</div>
+          <p class="note mt8">${chosen.size ? `${chosen.size}人が正解` : 'だれも当てられなかった場合はそのまま「決定」'}</p></div>
+        <div class="footer-actions"><button class="btn yellow" data-act="decide" data-sfx="confirm">この結果で決定</button></div>`;
+      G.show(render(), {
+        toggle: (d, el) => { chosen.has(d.id) ? chosen.delete(d.id) : chosen.add(d.id); el.classList.toggle('on'); Sound.play('tap'); $('.panel .note').textContent = chosen.size ? `${chosen.size}人が正解` : 'だれも当てられなかった場合はそのまま「決定」'; },
+        decide: () => score([...chosen])
+      }, { chip: chip(), mount: () => Sound.play('reveal') });
+    };
+    /* --- 順番に入力する方式 --- */
+    const guessInputPass = (gi, guesses = {}) => {
+      const gs = guessers(); const g = gs[gi];
+      G.show(UI.pass(g, { msg: `${nameHTML(g)}さんの回答番です。<br>ほかの人の答えは見えません。`, dots: UI.progressDots(gs.length, gi) }),
+        { ready: () => guessInput(gi, guesses) }, { chip: chip() });
+    };
+    const guessInput = (gi, guesses) => {
+      const gs = guessers(); const g = gs[gi];
+      G.show(`<div class="art" style="width:min(100%,44dvh,440px);margin:0 auto"><img src="${st.img}" alt="絵"></div>
+        <p class="center" style="font-weight:900;margin:14px 0 8px">${nameHTML(g)}さん、これは何？</p>
+        <input class="text-input" id="gin" maxlength="20" placeholder="答えを入力" autocomplete="off">
+        <div class="btn-row mt16"><button class="btn ghost sm" data-act="skip">わからない</button><button class="btn teal sm" data-act="send" data-sfx="confirm">回答する</button></div>`,
+        {
+          send: (d, el) => { const v = $('#gin').value.trim(); if (!v) { UI.toast('答えを入力してね（わからない場合は「わからない」）'); el.dataset.used = ''; return; } next(v); },
+          skip: () => next('')
+        }, { chip: chip(), mount: () => { const i = $('#gin'); i.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) $('[data-act=send]').click(); }); } });
+      const next = (text) => {
+        const ok = !!text && isDrawMatch(text, st.word);
+        guesses[g.id] = { text, ok };
+        if (gi + 1 < gs.length) guessInputPass(gi + 1, guesses); else {
+          G.show(`<div class="pass"><div class="who" style="font-size:30px">全員回答完了！</div><p class="msg">端末をみんなに見えるように置いて、<br>正解を発表しよう！</p><button class="btn yellow" data-act="go" data-sfx="drum">正解発表</button></div>`,
+            { go: () => reveal(guesses) }, { chip: chip() });
+        }
+      };
+    };
+    const score = (correctIds) => {
+      const pts = {}; const drawer = st.drawer;
+      correctIds.forEach(id => pts[id] = 100);
+      const all = correctIds.length === guessers().length && correctIds.length > 0;
+      pts[drawer.id] = correctIds.length * 50 + (all ? 50 : 0);
+      addPts(st.total, pts);
+      st.stats[drawer.id] = { drawPts: ((st.stats[drawer.id] || {}).drawPts || 0) + pts[drawer.id] };
+      st.arts.push({ img: st.img, word: st.word[1], drawer, correct: correctIds.length, of: guessers().length });
+      if (correctIds.length) { Sound.play('correct'); if (all) UI.confetti(1400, 80); } else Sound.play('wrong');
+      const isLast = st.di + 1 >= drawers.length;
+      G.show(`<div class="center"><div class="verdict ${correctIds.length ? 'ok' : 'ng'}">${all ? '全員正解！！' : correctIds.length ? `${correctIds.length}人が正解！` : '正解者なし…'}</div>
+          <p class="dim">お題「${esc(st.word[1])}」 / ${nameHTML(drawer)}さんの作品</p></div>
+        <div class="panel mt16"><h3>獲得ポイント</h3>${pointsList(pts)}</div>
+        <div class="footer-actions"><button class="btn ${isLast ? 'yellow' : ''}" data-act="next">${isLast ? '結果まとめへ' : '次の人が描く'}</button></div>`,
+        { next: () => { if (isLast) finish(); else { st.di++; pass(); } } }, { chip: chip() });
+    };
+    const finish = () => {
+      const summary = `<div class="gallery">${st.arts.map(a => `<figure><div class="art"><img src="${a.img}" alt="${esc(a.word)}"></div><figcaption>${nameHTML(a.drawer)}作「${esc(a.word)}」<br><span class="dim">正解 ${a.correct}/${a.of}</span></figcaption></figure>`).join('')}</div>`;
+      G.finish(st.total, st.stats, summary);
+    };
+    pass();
+  }
+};
+function isDrawMatch(text, word) {
+  const g = normalizeAnswer(text); if (!g) return false;
+  const cands = [word[1], ...(word[2] || [])].map(normalizeAnswer).filter(Boolean);
+  return cands.some(c => c === g || (c.length >= 2 && g.includes(c)) || (g.length >= 2 && c.includes(g) && g.length >= c.length * .6));
+}
+
+/* =========================================================
+ *  3. 裏切り者ミッション
+ * ========================================================= */
+GAMES.traitor = {
+  key: 'traitor', title: '裏切り者ミッション', color: '#a46bff',
+  desc: '1人だけに秘密のミッション。会話の中でこっそり達成できる？ みんなは正体を見抜け！',
+  time: '約3〜4分', players: '3〜6人',
+  rules: [
+    '全員が順番に、こっそり自分の役割カードをめくります。',
+    '1人だけが「裏切り者」。裏切り者には秘密のミッションが表示されます。',
+    'トークテーマに沿って、全員で自由に会話します（制限時間あり）。裏切り者はバレないようにミッションを達成しよう。',
+    '時間になったら、全員が「裏切り者だと思う人」に投票（自分には投票できません）。',
+    '正体を公開！ 裏切り者がミッションの成功・失敗を申告し、みんなで納得したら確定。',
+    '得点：ミッション成功で裏切り者に＋150点、だれにも投票されなければさらに＋100点。裏切り者を当てた人は＋100点。'
+  ],
+  options: [
+    { key: 'time', label: 'トーク時間', type: 'seg', choices: [[60, '60秒'], [90, '90秒'], [120, '120秒']], def: 90 }
+  ],
+  run(G) {
+    const set = G.settings; const s = Store.session;
+    const order = rotatedPlayers('traitor');
+    let cands = Store.players.filter(p => p.id !== s.lastTraitor); if (!cands.length) cands = Store.players;
+    const traitor = pick(cands);
+    const mission = drawFromPool('mission', DATA.missions, 1)[0];
+    const theme = pick(DATA.talkThemes);
+    const st = { votes: {} };
+    const chip = (t) => `<span class="chip">${t}</span>`;
+
+    const rolePass = (i) => {
+      const p = order[i];
+      G.show(UI.pass(p, { msg: `自分の役割をこっそり確認します。<br>ほかの人は画面を見ないでね！`, shield: '確認後はすぐに隠れます', dots: UI.progressDots(order.length, i) }),
+        { ready: () => roleCard(i) }, { chip: chip('役割チェック') });
+    };
+    const roleCard = (i) => {
+      const p = order[i];
+      G.show(`<p class="center" style="font-weight:900;margin:0 0 12px">${nameHTML(p)}さんの役割カード</p>
+        <div class="role-card" id="rc"><div class="role-inner">
+          <button class="role-face back" data-act="flip" data-sfx="whoosh" style="width:100%"><span style="font-size:52px">？</span><b>タップしてめくる</b><span class="dim small">自分だけで見てね</span></button>
+          <div class="role-face front" id="rf"></div></div></div>
+        <div class="footer-actions" id="ra" style="visibility:hidden"><button class="btn purple" data-act="hide" data-sfx="pass">確認した（隠して次へ）</button></div>`,
+        {
+          flip: () => {
+            // めくった時点で初めて中身を描画（事前にDOMへ入れない）
+            const f = $('#rf');
+            if (p.id === traitor.id) {
+              f.className = 'role-face front traitor';
+              f.innerHTML = `<div class="dim small" style="color:#ffc9d2">あなたは…</div><div class="rname">裏切り者</div>
+                <div class="mission">${esc(mission.t)}</div><div class="hint">ヒント：${esc(mission.h)}</div><div class="small">バレないように達成しよう！</div>`;
+            } else {
+              f.className = 'role-face front citizen';
+              f.innerHTML = `<div class="dim small">あなたは…</div><div class="rname">横丁の住人</div>
+                <div class="mission" style="font-size:16px">この中に<b style="color:var(--red)">裏切り者</b>がいる…<br>会話をよく観察して見抜こう！</div><div class="small dim">怪しい行動をした人を覚えておこう</div>`;
+            }
+            $('#rc').classList.add('flip');
+            Timers.timeout(() => { const ra = $('#ra'); if (ra) ra.style.visibility = 'visible'; }, 650);
+          },
+          hide: () => { if (i + 1 < order.length) rolePass(i + 1); else talkReady(); }
+        }, { chip: chip('役割チェック') });
+    };
+    const talkReady = () => {
+      G.show(`<div class="pass"><div class="who" style="font-size:28px">全員の確認が<br>終わりました</div>
+        <div class="panel" style="width:100%"><p class="dim small" style="margin:0">トークテーマ</p><div style="font-family:var(--font-head);font-size:24px;margin-top:4px">${esc(theme)}</div></div>
+        <p class="msg">端末をテーブルの真ん中に置いて、<br>${set.time}秒間 自由に話そう！</p>
+        <button class="btn" data-act="go" data-sfx="confirm">トーク開始！</button></div>`, { go: talk }, { chip: chip('準備OK') });
+    };
+    const talk = () => {
+      const C = 2 * Math.PI * 88;
+      G.show(`<div class="center"><p class="dim small" style="margin:0">トークテーマ</p><div style="font-family:var(--font-head);font-size:22px">${esc(theme)}</div></div>
+        <div class="ring mt16"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="88" stroke="rgba(255,255,255,.1)" stroke-width="14" fill="none"/>
+          <circle id="arc" cx="100" cy="100" r="88" stroke="url(#gr)" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0"/>
+          <defs><linearGradient id="gr"><stop offset="0" stop-color="#2ee6c5"/><stop offset="1" stop-color="#a46bff"/></linearGradient></defs></svg>
+          <div class="big-timer" id="bt">${set.time}</div></div>
+        <p class="lead center">この中に<b style="color:var(--red)">裏切り者</b>がいる…</p>
+        <div class="footer-actions"><div class="btn-row"><button class="btn ghost sm" data-act="add" data-multi>＋30秒</button><button class="btn purple sm" data-act="end">投票へ進む</button></div></div>`,
+        {
+          add: () => { timer.stop(); left += 30; total += 30; startTimer(left); UI.toast('30秒延長！'); },
+          end: async (d, el) => { if (await UI.confirm('トークを終了しますか？', '投票に進みます。', '投票へ', 'まだ話す', false)) { timer.stop(); votePass(0); } else el.dataset.used = ''; }
+        }, { chip: chip('トーク中') });
+      let left = set.time, total = set.time, timer;
+      const startTimer = (sec) => {
+        timer = countdown(sec, (l) => {
+          left = l; const bt = $('#bt'); if (!bt) return; bt.textContent = Math.ceil(l); bt.classList.toggle('warn', l <= 10);
+          $('#arc').setAttribute('stroke-dashoffset', C * (1 - l / total));
+        }, () => { Sound.play('buzzer'); timeUp(); });
+      };
+      startTimer(left);
+    };
+    const timeUp = () => {
+      G.show(`<div class="pass"><div class="who" style="font-size:40px;color:var(--red)">タイムアップ！</div><p class="msg">いよいよ投票タイム。<br>1人ずつこっそり投票しよう。</p><button class="btn purple" data-act="go">投票を始める</button></div>`,
+        { go: () => votePass(0) }, { chip: chip('投票') });
+    };
+    const votePass = (i) => {
+      const p = order[i];
+      G.show(UI.pass(p, { msg: `${nameHTML(p)}さんの投票番です。<br>ほかの人の投票は見えません。`, dots: UI.progressDots(order.length, i) }),
+        { ready: () => vote(i) }, { chip: chip('投票') });
+    };
+    const vote = (i) => {
+      const p = order[i]; let sel = null;
+      const others = Store.players.filter(x => x.id !== p.id);
+      G.show(`<p class="center" style="font-weight:900;font-size:18px;margin:0 0 12px">${nameHTML(p)}さん、裏切り者は誰？</p>
+        <div class="pick-grid">${others.map(o => `<button class="pick bad" data-act="sel" data-multi data-id="${o.id}">${avatarHTML(o, 'sm')}${nameHTML(o)}</button>`).join('')}</div>
+        <div class="footer-actions"><button class="btn purple disabled" id="vb" data-act="cast" data-sfx="confirm">この人に投票</button></div>`,
+        {
+          sel: (d, el) => { sel = d.id; $$('.pick').forEach(b => b.classList.toggle('on', b === el)); $('#vb').classList.remove('disabled'); Sound.play('tap'); },
+          cast: () => { if (!sel) return; st.votes[p.id] = sel; if (i + 1 < order.length) votePass(i + 1); else allVoted(); }
+        }, { chip: chip('投票') });
+    };
+    const allVoted = () => {
+      G.show(`<div class="pass"><div class="who" style="font-size:30px">全員の投票が<br>完了しました</div><p class="msg">端末をみんなが見える場所に置いて…</p>
+        <button class="btn" data-act="go" data-sfx="drum">裏切り者の正体を明かす</button></div>`, { go: revealDrum }, { chip: chip('正体発表') });
+    };
+    const revealDrum = () => {
+      G.show(`<div class="drum"><div><div class="big">裏切り者は…</div></div></div>`, {}, { chip: chip('正体発表') });
+      Timers.timeout(reveal, 1900);
+    };
+    const tally = () => {
+      const t = {}; Store.players.forEach(p => t[p.id] = []);
+      Object.entries(st.votes).forEach(([voter, target]) => t[target].push(voter));
+      return t;
+    };
+    const reveal = () => {
+      const t = tally(); const n = Object.keys(st.votes).length;
+      Sound.play('reveal'); Timers.timeout(() => Sound.play('ominous'), 200);
+      const rows = Store.players.slice().sort((a, b) => t[b.id].length - t[a.id].length).map(p => `<div class="vt ${p.id === traitor.id ? 'is-traitor' : ''}">${avatarHTML(p, 'xs')}<b style="min-width:5em">${nameHTML(p)}</b><div class="bar"><i data-w="${n ? t[p.id].length / n * 100 : 0}"></i></div><span class="n">${t[p.id].length}</span></div>`).join('');
+      G.show(`<div class="reveal-traitor"><div class="spot">${avatarHTML(traitor, 'xl')}</div>
+          <div style="font-family:var(--font-head);font-size:clamp(28px,8vw,40px);margin-top:6px"><span style="color:var(--red)">${nameHTML(traitor)}</span>さん！</div></div>
+        <div class="panel mt16"><h3>秘密のミッション</h3><p class="lead" style="margin:0;font-weight:900">${esc(mission.t)}</p></div>
+        <div class="panel mt16"><h3>投票結果</h3><div class="vote-tally">${rows}</div></div>
+        <div class="panel mt16 neon"><h3>${nameHTML(traitor)}さん、ミッションは？</h3><p class="note" style="margin:0 0 10px">本人が申告し、みんなが納得したら確定します。</p>
+          <div class="btn-row"><button class="btn teal sm" data-act="claim" data-v="1">成功した！</button><button class="btn ghost sm" data-act="claim" data-v="0">失敗した…</button></div></div>`,
+        { claim: d => confirmClaim(d.v === '1') }, {
+          chip: chip('正体発表'), mount: () => { UI.confetti(900, 50); Timers.timeout(() => $$('.vt .bar i').forEach(i => i.style.width = i.dataset.w + '%'), 80); }
+        });
+    };
+    const confirmClaim = (ok) => {
+      G.show(`<div class="pass"><div class="msg">${nameHTML(traitor)}さんの申告</div>
+        <div class="who" style="color:${ok ? 'var(--teal)' : 'var(--dim)'}">ミッション${ok ? '成功！' : '失敗…'}</div>
+        <div class="panel" style="width:100%"><p class="lead" style="margin:0">ミッション：<b>${esc(mission.t)}</b></p></div>
+        <p class="msg">みんな、この申告に納得できる？<br>話し合って決めよう！</p>
+        <button class="btn yellow" data-act="ok" data-sfx="confirm">みんな納得！確定する</button>
+        <button class="btn ghost sm" data-act="back">申告をやり直す</button></div>`,
+        { ok: () => score(ok), back: reveal }, { chip: chip('判定') });
+    };
+    const score = (success) => {
+      const t = tally(); const caughtBy = t[traitor.id]; const escaped = caughtBy.length === 0;
+      const pts = {}; const stats = {};
+      pts[traitor.id] = (success ? 150 : 0) + (escaped ? 100 : 0);
+      if (success || escaped) stats[traitor.id] = { schemer: 1 };
+      caughtBy.forEach(v => { pts[v] = 100; stats[v] = { detect: 1 }; });
+      s.lastTraitor = traitor.id; Store.save();
+      const traitorWins = success && escaped;
+      const headline = traitorWins ? '裏切り者の完全勝利！' : success ? 'ミッション成功！でも正体はバレた' : escaped ? '逃げ切り成功…！' : '住人チームの勝利！';
+      if (traitorWins || (!success && !escaped)) Sound.play('fanfare'); else Sound.play('correct');
+      UI.confetti(1800, 120);
+      const summary = `<div class="row">${avatarHTML(traitor, 'lg')}<div><div style="font-weight:900;font-size:18px">裏切り者：${nameHTML(traitor)}さん</div><div class="dim small">${esc(mission.t)}</div><div class="small" style="margin-top:4px;color:var(--yellow);font-weight:900">${headline}（ミッション${success ? '成功' : '失敗'}・${caughtBy.length}票）</div></div></div>`;
+      G.show(`<div class="center"><div class="verdict ${traitorWins ? 'ng' : 'ok'}" style="font-size:clamp(26px,8vw,36px)">${headline}</div></div>
+        <div class="panel mt16">${summary}</div>
+        <div class="panel mt16"><h3>獲得ポイント</h3>${pointsList(pts)}</div>
+        <div class="footer-actions"><button class="btn yellow" data-act="fin">結果まとめへ</button></div>`,
+        { fin: () => G.finish(pts, stats, summary) }, { chip: chip('結果') });
+    };
+    rolePass(0);
+  }
+};
+
+/* =========================================================
+ *  4. 以心伝心チャレンジ
+ * ========================================================= */
+GAMES.sync = {
+  key: 'sync', title: '以心伝心チャレンジ', color: '#ffd23f',
+  desc: '同じ質問にみんなで回答。答えがそろうほど高得点！ 心はひとつになれるか？',
+  time: '1問 約40秒', players: '3〜6人',
+  rules: [
+    '全員に同じ質問が出ます。端末を回して、1人ずつこっそり答えを選びます。',
+    '全員の答えを一斉公開！ 同じ答えの人が多いほど得点アップ。',
+    '得点：同じ答えの仲間1人につき＋30点。全員一致なら全員にさらに＋100点！',
+    '「自由入力」では、ひらがな・カタカナなどの表記ゆれは自動でそろえます。同じ意味の答えは手動でまとめることもできます。'
+  ],
+  options: [
+    { key: 'count', label: '問題数', type: 'seg', choices: [[3, '3問'], [5, '5問']], def: 3 },
+    { key: 'kind', label: '回答方式', type: 'seg', choices: [['choice', '選択肢のみ'], ['mix', '自由入力もあり']], def: 'choice' }
+  ],
+  run(G) {
+    const set = G.settings;
+    const qs = drawFromPool('sync', DATA.syncQs, set.count, q => set.kind === 'mix' || q.type !== 'free');
+    const st = { qi: 0, total: {}, stats: {}, log: [] };
+    const chip = () => `<span class="chip">${st.qi + 1}/${qs.length}問</span>`;
+
+    const intro = () => {
+      st.ans = {}; st.order = rotatedPlayers('sync');
+      const q = qs[st.qi];
+      G.show(`<div class="qcard" style="border-color:rgba(255,210,63,.5)"><span class="badge" style="margin:0">${q.type === 'free' ? '自由入力' : '選択式'}</span><div class="qtext mt8">${esc(q.q)}</div></div>
+        <p class="lead center mt16">みんなと<b style="color:var(--yellow)">同じ答え</b>になりそうなものを選ぼう！<br><span class="dim small">相談はナシ！</span></p>
+        <div class="footer-actions"><button class="btn yellow" data-act="go" data-sfx="confirm">回答スタート！</button></div>`,
+        { go: () => pass(0) }, { chip: chip() });
+    };
+    const pass = (i) => {
+      const p = st.order[i];
+      G.show(UI.pass(p, { dots: UI.progressDots(st.order.length, i) }), { ready: () => answer(i) }, { chip: chip() });
+    };
+    const answer = (i) => {
+      const p = st.order[i]; const q = qs[st.qi];
+      const done = (v) => { st.ans[p.id] = v; i + 1 < st.order.length ? pass(i + 1) : revealDrum(); };
+      if (q.type === 'free') {
+        G.show(`<p class="center" style="font-weight:900">${nameHTML(p)}さんの番</p><div class="qcard"><div class="qtext">${esc(q.q)}</div></div>
+          <input class="text-input mt16" id="fin" maxlength="16" placeholder="${esc(q.hint || '答えを入力')}" autocomplete="off">
+          <div class="footer-actions"><button class="btn yellow" data-act="send" data-sfx="confirm">これで決定</button></div>`,
+          { send: (d, el) => { const v = $('#fin').value.trim(); if (!v) { UI.toast('答えを入力してね'); el.dataset.used = ''; return; } done(v); } },
+          { chip: chip(), mount: () => $('#fin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) $('[data-act=send]').click(); }) });
+      } else {
+        G.show(`<p class="center" style="font-weight:900">${nameHTML(p)}さんの番</p><div class="qcard"><div class="qtext">${esc(q.q)}</div></div>
+          <div class="answers ${q.opts.length === 2 || q.opts.length === 4 ? 'two' : ''}">${q.opts.map((o, k) => `<button class="ans" data-act="pick" data-k="${k}" data-sfx="confirm"><span class="k">${'ABCDE'[k]}</span>${esc(o)}</button>`).join('')}</div>`,
+          { pick: d => done(q.opts[+d.k]) }, { chip: chip() });
+      }
+    };
+    const revealDrum = () => {
+      G.show(`<div class="pass"><div class="who" style="font-size:30px">全員回答完了！</div><p class="msg">心はひとつになったかな…？</p><button class="btn yellow" data-act="go" data-sfx="drum">一斉公開！</button></div>`,
+        { go: () => { G.show(`<div class="drum"><div class="big">せーの…！</div></div>`, {}, { chip: chip() }); Timers.timeout(result, 1500); } }, { chip: chip() });
+    };
+    const groupsOf = () => {
+      const q = qs[st.qi]; const map = new Map();
+      st.order.forEach(p => {
+        const raw = st.ans[p.id]; const key = q.type === 'free' ? (st.merge[normalizeAnswer(raw)] || normalizeAnswer(raw)) : raw;
+        if (!map.has(key)) map.set(key, { key, label: raw, members: [] });
+        map.get(key).members.push(p);
+      });
+      return [...map.values()].sort((a, b) => b.members.length - a.members.length);
+    };
+    const result = () => {
+      st.merge = {}; const sel = new Set();
+      const q = qs[st.qi]; const n = st.order.length;
+      const draw = (first) => {
+        const gs = groupsOf(); const top = gs[0].members.length; const unanimous = gs.length === 1;
+        const pts = {}; st.order.forEach(p => { const g = gs.find(x => x.members.includes(p)); pts[p.id] = (g.members.length - 1) * 30 + (unanimous ? 100 : 0); });
+        st.cur = { gs, pts, unanimous };
+        const tag = g => unanimous ? '全員一致！' : g.members.length > n / 2 ? '過半数一致' : g.members.length === 1 ? 'ひとりだけ' : g.members.length === top ? '最多' : '';
+        const html = `<div class="qcard" style="padding:14px"><div class="qtext" style="font-size:18px">${esc(q.q)}</div></div>
+          ${unanimous ? '<div class="special mt16"><b>全員一致！！</b>以心伝心！ 全員に＋100点ボーナス！</div>' : ''}
+          <div class="groups mt16">${gs.map((g, gi) => `<${q.type === 'free' && !unanimous ? 'button data-act="sel" data-multi data-key="' + esc(g.key) + '"' : 'div'} class="group ${g.members.length === top && top > 1 ? 'top' : ''} ${sel.has(g.key) ? 'sel' : ''}" style="animation-delay:${first ? gi * .15 : 0}s;text-align:left;width:100%">
+              <div class="gh"><span>${esc(g.label)} ${tag(g) ? `<span class="badge ${g.members.length === 1 ? 'minor' : ''}">${tag(g)}</span>` : ''}</span><span class="c">${g.members.length}人</span></div>
+              <div class="row wrap mt8" style="gap:6px">${g.members.map(p => `<span class="chip" style="padding:3px 10px 3px 3px">${avatarHTML(p, 'xs')}${nameHTML(p)}</span>`).join('')}</div></${q.type === 'free' && !unanimous ? 'button' : 'div'}>`).join('')}</div>
+          ${q.type === 'free' && !unanimous ? `<p class="note mt8">同じ意味の答えは、タップして選び「まとめる」を押すと同じ答えとして扱えます。</p><button class="btn ghost sm ${sel.size >= 2 ? '' : 'disabled'}" data-act="merge" data-multi>選んだ答えをまとめる</button>` : ''}
+          <div class="panel mt16"><h3>この問題のポイント</h3>${pointsList(pts)}</div>
+          <div class="footer-actions"><button class="btn ${st.qi + 1 >= qs.length ? 'yellow' : ''}" data-act="next">${st.qi + 1 >= qs.length ? '結果まとめへ' : '次の問題へ'}</button></div>`;
+        G.show(html, {
+          sel: (d) => { sel.has(d.key) ? sel.delete(d.key) : sel.add(d.key); Sound.play('tap'); draw(false); },
+          merge: () => { if (sel.size < 2) return; const keys = [...sel]; const root = keys[0]; Object.keys(st.merge).forEach(k => { if (keys.includes(st.merge[k])) st.merge[k] = root; }); keys.forEach(k => st.merge[k] = root); sel.clear(); Sound.play('pop'); draw(false); },
+          next: () => {
+            const { pts, gs } = st.cur; addPts(st.total, pts);
+            st.order.forEach(p => { const g = gs.find(x => x.members.includes(p)); st.stats[p.id] = { syncMatch: ((st.stats[p.id] || {}).syncMatch || 0) + g.members.length - 1 }; });
+            st.log.push({ q: q.q, top: gs[0].label, topN: gs[0].members.length, n });
+            if (st.qi + 1 >= qs.length) finish(); else { st.qi++; intro(); }
+          }
+        }, { chip: chip(), mount: () => { if (first) { Sound.play(unanimous ? 'unanimous' : 'reveal'); if (unanimous) UI.confetti(1500, 100); } } });
+      };
+      draw(true);
+    };
+    const finish = () => {
+      const summary = `<div class="stack">${st.log.map(l => `<div class="award"><div class="nm">${esc(l.q)}<small>最多回答「${esc(l.top)}」</small></div><div class="pt" style="font-size:16px;color:var(--ink)">${l.topN}/${l.n}人</div></div>`).join('')}</div>`;
+      G.finish(st.total, st.stats, summary);
+    };
+    intro();
+  }
+};
+
+/* =========================================================
+ *  5. 瞬間クイズ
+ * ========================================================= */
+GAMES.quiz = {
+  key: 'quiz', title: '瞬間クイズ', color: '#4fb3ff',
+  desc: '数秒で即答！ 順番に挑戦するスピードクイズ。早く答えるほどボーナス。',
+  time: '約2〜3分', players: '3〜6人',
+  rules: [
+    '1人ずつ順番に挑戦します。自分の番になったら「スタート」。',
+    '制限時間内に選択肢から答えをタップ！',
+    '正解で＋100点、さらに残り時間1秒につき＋10点のスピードボーナス。',
+    '見ている人はヒントを言わないでね（応援はOK！）。'
+  ],
+  options: [
+    { key: 'per', label: '1人あたりの問題数', type: 'seg', choices: [[2, '2問'], [3, '3問'], [4, '4問']], def: 3 },
+    { key: 'time', label: '制限時間', type: 'seg', choices: [[5, '5秒'], [7, '7秒'], [10, '10秒']], def: 7 }
+  ],
+  run(G) {
+    const set = G.settings; const order = rotatedPlayers('quiz');
+    const total = order.length * set.per;
+    const qs = drawFromPool('quiz', DATA.quiz, total);
+    const st = { i: 0, total: {}, stats: {}, correct: {} };
+    const chip = () => `<span class="chip">${st.i + 1}/${qs.length}問</span>`;
+    const who = () => order[st.i % order.length];
+
+    const pass = () => {
+      const p = who();
+      G.show(UI.pass(p, { msg: `${nameHTML(p)}さんの挑戦！<br>制限時間は <b style="color:var(--yellow)">${set.time}秒</b>。`, btn: 'スタート！', shield: '', dots: UI.progressDots(qs.length, st.i) }),
+        { ready: ask }, { chip: chip() });
+    };
+    const ask = () => {
+      const p = who(); const q = qs[st.i];
+      // 選択肢の順番をシャッフル（正解indexを追跡）
+      const perm = shuffle(q.o.map((_, k) => k));
+      let answered = false;
+      G.show(`<div class="row" style="justify-content:space-between;margin-bottom:10px"><span class="row">${avatarHTML(p, 'sm')}<b>${nameHTML(p)}さん</b></span><span class="chip">${esc(q.c)}</span></div>
+        <div class="timer-bar" id="qt"><i></i></div>
+        <div class="big-timer mt8" id="qs" style="font-size:54px">${set.time}</div>
+        <div class="qcard mt8"><div class="qtext">${esc(q.q)}</div></div>
+        <div class="answers ${q.o.length === 4 ? 'two' : ''}" id="ans">${perm.map((k, j) => `<button class="ans" data-act="pick" data-k="${k}" data-sfx="none"><span class="k">${'ABCD'[j]}</span>${esc(q.o[k])}</button>`).join('')}</div>
+        <div id="fb"></div>`,
+        { pick: d => judge(+d.k) }, { chip: chip() });
+      const timer = countdown(set.time, (l, f) => { const i = $('#qt i'); if (i) i.style.transform = `scaleX(${f})`; $('#qt').classList.toggle('warn', l <= 3); const s = $('#qs'); if (s) { s.textContent = Math.ceil(l); s.classList.toggle('warn', l <= 3); } },
+        () => judge(null));
+      const judge = (k) => {
+        if (answered) return; answered = true;
+        const left = timer.done ? 0 : Math.ceil(Math.max(0, set.time - (performance.now() - t0) / 1000));
+        timer.stop();
+        const ok = k === q.a;
+        const pts = ok ? 100 + left * 10 : 0;
+        st.total[p.id] = (st.total[p.id] || 0) + pts;
+        if (ok) { st.correct[p.id] = (st.correct[p.id] || 0) + 1; Sound.play('correct'); } else Sound.play(k === null ? 'buzzer' : 'wrong');
+        $$('#ans .ans').forEach(b => { b.disabled = true; const bk = +b.dataset.k; if (bk === q.a) b.classList.add('correct'); else if (bk === k) b.classList.add('wrong'); else b.classList.add('fade'); });
+        const isLast = st.i + 1 >= qs.length;
+        $('#fb').innerHTML = `<div class="verdict ${ok ? 'ok' : 'ng'} mt16">${ok ? `正解！ +${pts}` : k === null ? '時間切れ！' : '残念！'}</div>
+          <p class="center dim" style="margin:6px 0 0">${esc(q.e)}</p>
+          <div class="footer-actions"><button class="btn ${isLast ? 'yellow' : ''}" data-act="next">${isLast ? '結果まとめへ' : '次の問題へ'}</button></div>`;
+        UI.handlers.next = () => { if (isLast) finish(); else { st.i++; pass(); } };
+        $('#fb').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      };
+      const t0 = performance.now();
+    };
+    const finish = () => {
+      Store.players.forEach(p => { if (st.correct[p.id]) st.stats[p.id] = { quizCorrect: st.correct[p.id] }; });
+      const summary = `<div class="award-list">${order.map(p => `<div class="award">${avatarHTML(p, 'sm')}<div class="nm">${nameHTML(p)}</div><div class="pt" style="font-size:18px;color:var(--ink)">${st.correct[p.id] || 0}/${set.per}問正解</div></div>`).join('')}</div>`;
+      G.finish(st.total, st.stats, summary);
+    };
+    pass();
+  }
+};
+
+/* =========================================================
+ *  APP — 画面遷移（ホーム / 登録 / モード選択 / 結果 / ランキング / ルーレット）
+ * ========================================================= */
+'use strict';
+
+const MODE_ORDER = ['choice', 'draw', 'traitor', 'sync', 'quiz', 'roulette'];
+const ROULETTE_META = {
+  key: 'roulette', title: '横丁ルーレット', color: '#ff9a3c',
+  desc: '次に遊ぶゲームやボーナスイベントをルーレットで決定！ 何が出るかはお楽しみ。',
+  time: '約20秒', players: '3〜6人',
+  rules: ['ルーレットを回すと、5つのミニゲームかボーナスイベントのどれかに止まります。', '直前に遊んだゲームはお休みになり、同じゲームばかり続かないようになっています。', 'ボーナスイベントは得点に関するものだけ。罰ゲームや飲酒の指示はありません。']
+};
+const modeMeta = k => k === 'roulette' ? ROULETTE_META : GAMES[k];
+
+function topbar({ left = 'home', title = '', sub = '', right = '' } = {}) {
+  const l = left === 'home' ? `<button class="icon-btn" data-act="goHome" aria-label="ホーム">${ICON.home}</button>`
+    : left === 'back' ? `<button class="icon-btn" data-act="goBack" aria-label="戻る">${ICON.back}</button>` : '';
+  return `<div class="topbar">${l}<div class="title">${esc(title)}${sub ? `<small>${sub}</small>` : ''}</div>${right}</div>`;
+}
+function rankListHTML(before) {
+  return `<div class="rank-list">${Score.ranking().map((r, i) => {
+    const b = before && before[r.player.id]; const up = b ? b - r.rank : 0;
+    return `<div class="rank ${r.rank <= 3 ? 'p' + r.rank : ''}" style="animation-delay:${i * .06}s">
+      <div class="pos">${r.rank}<small style="font-size:12px">位</small></div>${avatarHTML(r.player, 'sm')}
+      <div class="nm">${nameHTML(r.player)}${r.tie ? '<span class="tie">同率</span>' : ''}<small>トップ獲得 ${r.wins}回${up > 0 ? ` <span class="delta">▲${up}</span>` : ''}</small></div>
+      <div class="sc">${r.score.toLocaleString()}</div></div>`;
+  }).join('')}</div>`;
+}
+
+const App = {
+  inGame: false, current: null,
+  init() {
+    UI.init();
+    Store.load();
+    Sound.sfxOn = Store.settings.sfx !== false; Sound.bgmOn = !!Store.settings.bgm;
+    // 自動再生制限対策：最初の操作で音声を有効化
+    const unlock = () => { if (Sound.ensure() && Sound.bgmOn) Sound.bgmStart(); };
+    document.addEventListener('pointerdown', unlock); document.addEventListener('keydown', unlock);
+    window.addEventListener('beforeunload', e => { if (App.inGame) { e.preventDefault(); e.returnValue = ''; } });
+    this.home();
+  },
+  common() {
+    return {
+      ...UI.soundHandlers(),
+      goHome: () => this.home(),
+      goBack: () => this.modes()
+    };
+  },
+
+  /* ---------------- 画面A：ホーム ---------------- */
+  home() {
+    this.inGame = false;
+    const has = Store.players.length >= 3;
+    const prog = Store.hasProgress;
+    const top = has && prog ? Score.ranking()[0] : null;
+    UI.show(`<div class="home-hero">
+        <div class="lantern-row">${ICON.lantern('#ff4d5e', '酒')}${ICON.lantern('#ff9a3c', '横')}${ICON.lantern('#ff4d5e', '丁')}</div>
+        <div class="sign"><div class="kicker">酒場バトル！</div><h1>どんちゃん<br>横丁</h1><div class="tag">飲み会をバラエティ番組に変えるパーティーゲーム</div></div>
+        <div class="noren"><span>二</span><span>択</span><span>絵</span><span>謎</span><span>宴</span></div>
+      </div>
+      ${prog ? `<button class="btn ghost resume" data-act="resume">続きから遊ぶ<small>${Store.players.length}人・${Store.session.history.length}ゲーム済み・首位 ${nameHTML(top.player)}</small></button>` : ''}
+      <div class="home-menu">
+        <button class="btn big" data-act="play" data-sfx="confirm">みんなで遊ぶ</button>
+        <button class="btn yellow" data-act="random">ランダムに遊ぶ</button>
+        <button class="btn teal" data-act="list">ゲーム一覧</button>
+        <button class="btn purple" data-act="howto" style="grid-column:1/-1">遊び方</button>
+      </div>
+      <div class="sound-row">${UI.soundToggles()}</div>
+      <div class="ticker"><div>本日の看板メニュー「究極の二択酒場」 ／ お酒を飲まなくても楽しめます ／ 罰ゲームなし・無理強いなし ／ 1台のスマホを回して3〜6人で遊べます ／ お絵描き・心理戦・クイズもそろってます</div></div>`,
+      {
+        ...this.common(),
+        play: () => this.setup('modes'),
+        resume: () => this.modes(),
+        random: () => has ? this.roulette() : this.setup('roulette'),
+        list: () => this.catalog(),
+        howto: () => this.howto()
+      }, { cls: 'home' });
+  },
+  howto() {
+    UI.modal(`<h2>遊び方</h2>
+      <ol class="rule-list">
+        <li><b class="n">1</b><span><b>プレイヤー登録</b>：3〜6人の名前とアバターを決めます。</span></li>
+        <li><b class="n">2</b><span><b>ゲームを選ぶ</b>：6つのモードから選択。迷ったら「横丁ルーレット」！</span></li>
+        <li><b class="n">3</b><span><b>端末を回して遊ぶ</b>：自分の番が来たら画面の指示どおりに。ほかの人の回答は見えない仕組みです。</span></li>
+        <li><b class="n">4</b><span><b>得点とランキング</b>：ゲームごとに自動で集計されます。同点は同じ順位です。</span></li>
+        <li><b class="n">5</b><span><b>最終結果発表</b>：好きなタイミングで表彰式へ。プレイ内容に応じた称号が贈られます。</span></li>
+      </ol>
+      <div class="panel mt16" style="padding:14px"><h3>横丁のお約束</h3><p class="note" style="margin:0">・お酒を飲まなくても全部のゲームが楽しめます。飲酒や罰ゲームの指示は一切ありません。<br>・答えたくないお題はパスしてOK。無理強いはナシで！<br>・このバージョンは1台の端末を順番に回して遊ぶ方式です（各自のスマホからの参加には対応していません）。<br>・得点はこの端末のブラウザに保存されます。</p></div>
+      <button class="btn mt16" data-act="close">閉じる</button>`, { close: () => UI.closeModal() });
+  },
+
+  /* ---------------- 画面B：プレイヤー登録 ---------------- */
+  setup(next = 'modes') {
+    this.inGame = false;
+    const draft = Store.players.length >= 3 ? Store.players.map(p => ({ ...p })) : [];
+    const freeAvatar = () => (DATA.avatars.find(a => !draft.some(p => p.avatar === a.id)) || DATA.avatars[0]).id;
+    const addOne = () => draft.push({ id: uid('p'), name: '', avatar: freeAvatar() });
+    while (draft.length < 3) addOne();
+    const render = () => {
+      UI.show(`${topbar({ left: 'home', title: 'プレイヤー登録', sub: '3〜6人で遊べます' })}
+        <div class="panel"><div class="count-ctrl">
+          <button data-act="minus" data-multi ${draft.length <= 3 ? 'disabled' : ''} aria-label="減らす">−</button>
+          <div class="num">${draft.length}<small style="font-size:18px">人</small></div>
+          <button data-act="plus" data-multi ${draft.length >= 6 ? 'disabled' : ''} aria-label="増やす">＋</button></div></div>
+        <div class="player-list mt16">${draft.map((p, i) => `<div class="prow">
+            <button data-act="ava" data-multi data-i="${i}" aria-label="アバター変更">${avatarHTML(p)}</button>
+            <input data-i="${i}" maxlength="10" value="${esc(p.name)}" placeholder="プレイヤー${i + 1}" aria-label="プレイヤー${i + 1}の名前">
+            <button class="del" data-act="del" data-multi data-i="${i}" ${draft.length <= 3 ? 'disabled' : ''} aria-label="削除">×</button></div>`).join('')}</div>
+        ${draft.length < 6 ? '<button class="btn ghost sm mt16" data-act="plus" data-multi>＋ プレイヤーを追加</button>' : ''}
+        <p class="note mt8">アバターをタップすると変更できます。名前が空欄なら「プレイヤー1」のように自動で付きます。</p>
+        <div class="footer-actions"><button class="btn" data-act="check" data-multi data-sfx="confirm">登録内容を確認</button></div>`,
+        {
+          ...this.common(),
+          plus: () => { if (draft.length < 6) { addOne(); render(); } },
+          minus: () => { if (draft.length > 3) { draft.pop(); render(); } },
+          del: d => { if (draft.length > 3) { draft.splice(+d.i, 1); render(); } },
+          ava: d => pickAvatar(+d.i),
+          check: () => confirm()
+        }, {
+          mount: el => $$('input[data-i]', el).forEach(inp => inp.addEventListener('input', () => { draft[+inp.dataset.i].name = inp.value.slice(0, 10); }))
+        });
+    };
+    const pickAvatar = (i) => {
+      UI.modal(`<h2>アバターを選ぶ</h2><div class="ava-picker">${DATA.avatars.map(a => {
+        const usedBy = draft.find((p, j) => j !== i && p.avatar === a.id);
+        return `<div><button data-act="set" data-id="${a.id}" class="${draft[i].avatar === a.id ? 'on' : ''}" ${usedBy ? 'disabled' : ''}><span class="ava" style="--c:${a.bg}">${a.glyph}</span></button><div class="label">${esc(a.name)}</div></div>`;
+      }).join('')}</div><button class="btn ghost sm mt16" data-act="close">閉じる</button>`,
+        { set: d => { draft[i].avatar = d.id; UI.closeModal(); render(); }, close: () => UI.closeModal() });
+    };
+    const confirm = () => {
+      draft.forEach((p, i) => { p.name = (p.name || '').trim() || `プレイヤー${i + 1}`; });
+      const changed = draft.map(p => p.id).sort().join() !== Store.players.map(p => p.id).sort().join();
+      const warn = changed && Store.hasProgress;
+      UI.modal(`<h2>登録内容の確認</h2>
+        <div class="award-list">${draft.map((p, i) => `<div class="award">${avatarHTML(p, 'sm')}<div class="nm">${esc(p.name)}<small>${i + 1}番目</small></div></div>`).join('')}</div>
+        ${warn ? '<p class="note mt8" style="color:var(--yellow)">※メンバーが変わったため、これまでの得点はリセットされます。</p>' : ''}
+        <div class="btn-row"><button class="btn ghost sm" data-act="no">修正する</button><button class="btn teal sm" data-act="ok" data-sfx="confirm">この${draft.length}人で遊ぶ</button></div>`,
+        {
+          no: () => { UI.closeModal(); render(); },
+          ok: () => {
+            Store.players = draft.map(p => ({ id: p.id, name: p.name, avatar: p.avatar }));
+            if (changed || !Store.session) Store.newSession(); else Store.syncSession();
+            UI.closeModal(); UI.toast(`${draft.length}人で横丁に入店！`);
+            if (next === 'roulette') this.roulette();
+            else if (next.startsWith('intro:')) this.intro(next.slice(6));
+            else this.modes();
+          }
+        });
+    };
+    render();
+  },
+
+  /* ---------------- 画面C：ゲームモード選択 ---------------- */
+  modeCards(act) {
+    return `<div class="mode-grid">${MODE_ORDER.map((k, i) => {
+      const m = modeMeta(k);
+      return `<button class="mode-card" data-act="${act}" data-k="${k}" style="--mc:${m.color};animation:screenIn .35s ${i * .05}s backwards">
+        ${m.star ? `<span class="star">${m.star}</span>` : ''}
+        <span class="icon">${ICON.modes[k]}</span>
+        <span style="min-width:0"><h3>${esc(m.title)}</h3><p>${esc(m.desc)}</p><span class="meta"><span>${esc(m.time)}</span><span>${esc(m.players)}</span></span></span></button>`;
+    }).join('')}</div>`;
+  },
+  modes() {
+    if (Store.players.length < 3) return this.setup('modes');
+    this.inGame = false;
+    const s = Store.session; const rk = Score.ranking();
+    UI.show(`${topbar({ left: 'home', title: 'ゲームを選ぶ', sub: `${Store.players.length}人で参加中・${s.history.length}ゲーム済み`, right: `<button class="icon-btn" data-act="rank" aria-label="ランキング">${ICON.trophy}</button>` })}
+      ${s.multiplier > 1 ? '<div class="center" style="margin-bottom:10px"><span class="chip x2">次のゲームは得点2倍！</span></div>' : ''}
+      <div class="mini-rank" style="margin-bottom:14px">${rk.map(r => `<span class="mr">${avatarHTML(r.player, 'xs')}${r.rank}位 ${nameHTML(r.player)} <b style="color:var(--yellow)">${r.score}</b></span>`).join('')}</div>
+      ${this.modeCards('mode')}
+      <div class="footer-actions" style="max-width:560px;width:100%;margin:24px auto 0">
+        ${s.history.length ? '<button class="btn purple" data-act="final">最終結果を発表する</button>' : ''}
+        <button class="btn ghost sm" data-act="members">メンバーを変更する</button></div>`,
+      {
+        ...this.common(),
+        mode: d => d.k === 'roulette' ? this.roulette() : this.intro(d.k),
+        rank: () => this.standings(),
+        final: () => this.final(),
+        members: () => this.setup('modes')
+      }, { wide: true });
+  },
+  catalog() {
+    this.inGame = false;
+    UI.show(`${topbar({ left: 'home', title: 'ゲーム一覧', sub: 'タップでルールを確認できます' })}${this.modeCards('info')}`,
+      {
+        ...this.common(),
+        info: d => {
+          const m = modeMeta(d.k);
+          UI.modal(`<h2>${esc(m.title)}</h2><p class="dim" style="margin:0 0 10px">${esc(m.desc)}</p>
+            <ol class="rule-list">${m.rules.map((r, i) => `<li><b class="n">${i + 1}</b><span>${esc(r)}</span></li>`).join('')}</ol>
+            <div class="btn-row"><button class="btn ghost sm" data-act="close">閉じる</button><button class="btn sm" data-act="play">このゲームで遊ぶ</button></div>`,
+            {
+              close: () => UI.closeModal(),
+              play: () => { UI.closeModal(); const k = d.k; if (Store.players.length < 3) this.setup(k === 'roulette' ? 'roulette' : 'intro:' + k); else k === 'roulette' ? this.roulette() : this.intro(k); }
+            });
+          // モーダル表示後もカードを再タップできるように
+          $$('.mode-card').forEach(b => b.dataset.used = '');
+        }
+      }, { wide: true });
+  },
+
+  /* ---------------- ゲーム開始前：ルール確認と設定 ---------------- */
+  intro(key) {
+    if (Store.players.length < 3) return this.setup('intro:' + key);
+    this.inGame = false;
+    const g = GAMES[key];
+    Store.settings.games = Store.settings.games || {};
+    const saved = Store.settings.games[key] || {};
+    const set = {};
+    g.options.forEach(o => {
+      let v = saved[o.key];
+      if (o.type === 'multi') { v = Array.isArray(v) ? v.filter(x => o.choices.some(c => c[0] === x)) : null; if (!v || !v.length) v = o.def.slice(); }
+      else if (!o.choices.some(c => c[0] === v)) v = o.def;
+      set[o.key] = v;
+    });
+    const optHTML = o => o.type === 'multi'
+      ? `<div class="pill-set">${o.choices.map(([v, l]) => `<button class="pill ${set[o.key].includes(v) ? 'on' : ''}" data-act="multi" data-multi data-k="${o.key}" data-v="${v}">${esc(l)}</button>`).join('')}</div>`
+      : `<div class="seg">${o.choices.map(([v, l]) => `<button class="${set[o.key] === v ? 'on' : ''}" data-act="opt" data-multi data-k="${o.key}" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;
+    UI.show(`${topbar({ left: 'back', title: g.title, sub: `${g.time}・${g.players}` })}
+      <div class="panel neon" style="display:flex;gap:14px;align-items:center"><span class="gicon" style="--mc:${g.color}">${ICON.modes[key]}</span>
+        <p class="lead" style="margin:0">${esc(g.desc)}</p></div>
+      <div class="panel mt16"><h2>ルール</h2><ol class="rule-list">${g.rules.map((r, i) => `<li><b class="n">${i + 1}</b><span>${esc(r)}</span></li>`).join('')}</ol></div>
+      <div class="panel mt16"><h2>設定</h2>${g.options.map(o => `<div class="field-label">${esc(o.label)}</div>${optHTML(o)}`).join('')}</div>
+      ${Store.session.multiplier > 1 ? '<div class="center mt16"><span class="chip x2">このゲームは得点2倍！</span></div>' : ''}
+      <div class="footer-actions"><button class="btn" data-act="start" data-sfx="confirm">ゲーム開始！</button></div>`,
+      {
+        ...this.common(),
+        opt: (d, el) => {
+          const o = g.options.find(x => x.key === d.k); const c = o.choices.find(c => String(c[0]) === d.v);
+          set[d.k] = c[0]; $$(`[data-act=opt][data-k=${d.k}]`).forEach(b => b.classList.toggle('on', b === el)); Sound.play('tap');
+        },
+        multi: (d, el) => {
+          const arr = set[d.k]; const i = arr.indexOf(d.v);
+          if (i >= 0) { if (arr.length === 1) { UI.toast('1つ以上選んでね'); return; } arr.splice(i, 1); } else arr.push(d.v);
+          el.classList.toggle('on', i < 0); Sound.play('tap');
+        },
+        start: () => { Store.settings.games[key] = JSON.parse(JSON.stringify(set)); Store.save(); this.start(key, set); }
+      });
+  },
+
+  /* ---------------- 画面D：ゲームプレイの共通枠 ---------------- */
+  start(key, settings) {
+    const game = GAMES[key];
+    const screenAtStart = UI.screenNo;
+    const G = {
+      key, settings: JSON.parse(JSON.stringify(settings)), roundId: uid(key), finished: false,
+      show(html, handlers = {}, opt = {}) {
+        const mult = Store.session.multiplier > 1 ? '<span class="chip x2">×2</span>' : '';
+        const top = `<div class="topbar"><button class="icon-btn" data-act="gBack" aria-label="中断して戻る">${ICON.back}</button>
+          <div class="title">${esc(game.title)}</div>${opt.chip || ''}${mult}<button class="icon-btn" data-act="gMenu" aria-label="メニュー">${ICON.menu}</button></div>`;
+        return UI.show(top + html, { ...handlers, gBack: (d, el) => App.abortAsk(el), gMenu: (d, el) => App.gameMenu(G, el) }, opt);
+      },
+      finish(awards, stats, summary) {
+        if (G.finished) return; G.finished = true; App.inGame = false;
+        const rec = Score.commit(G.roundId, key, awards, stats, { title: game.title });
+        App.roundResult(rec, summary, key);
+      }
+    };
+    this.current = { key, settings: G.settings };
+    UI.curtain(game.title).then(() => {
+      if (UI.screenNo !== screenAtStart) return; // 待機中に別画面へ移動した
+      this.inGame = true;
+      try { game.run(G); } catch (e) { console.error(e); this.inGame = false; UI.toast('エラーが発生しました'); this.modes(); }
+    });
+  },
+  async abortAsk(el) {
+    const ok = await UI.confirm('ゲームを中断しますか？', 'このゲームの途中経過は保存されず、得点も加算されません。', '中断する', '続ける');
+    if (ok) { this.inGame = false; this.modes(); } else if (el) el.dataset.used = '';
+  },
+  gameMenu(G, el) {
+    if (el) el.dataset.used = '';
+    const g = GAMES[G.key];
+    UI.modal(`<h2>メニュー</h2>
+      <div class="stack">
+        <button class="btn ghost sm" data-act="rules">ルールを確認</button>
+        <button class="btn ghost sm" data-act="restart">このゲームを最初からやり直す</button>
+        <button class="btn ghost sm" data-act="abort">中断してゲーム選択へ</button>
+        <div class="sound-row" style="margin:4px 0">${UI.soundToggles()}</div>
+        <button class="btn sm" data-act="close">ゲームに戻る</button></div>`,
+      {
+        ...UI.soundHandlers(),
+        close: () => UI.closeModal(),
+        rules: () => UI.modal(`<h2>${esc(g.title)}のルール</h2><ol class="rule-list">${g.rules.map((r, i) => `<li><b class="n">${i + 1}</b><span>${esc(r)}</span></li>`).join('')}</ol><button class="btn sm mt16" data-act="close">閉じる</button>`, { close: () => UI.closeModal() }),
+        restart: async () => {
+          if (await UI.confirm('最初からやり直しますか？', 'このゲームの途中経過は破棄されます（得点は加算されません）。お題は新しくなります。', 'やり直す', 'やめる')) {
+            this.inGame = false; this.start(G.key, G.settings);
+          }
+        },
+        abort: () => { UI.closeModal(); this.abortAsk(); }
+      });
+  },
+
+  /* ---------------- 画面E：結果・ランキング ---------------- */
+  roundResult(rec, summary, key) {
+    this.inGame = false;
+    const g = GAMES[key];
+    const ps = Store.players.slice().sort((a, b) => rec.awards[b.id] - rec.awards[a.id]);
+    UI.show(`${topbar({ left: 'home', title: '結果発表', sub: esc(g.title), right: `<button class="icon-btn" data-act="rank" aria-label="ランキング">${ICON.trophy}</button>` })}
+      <div class="panel"><h2>ゲームの結果</h2>${summary}</div>
+      <div class="panel neon mt16"><h2>獲得ポイント${rec.mult > 1 ? ' <span class="chip x2" style="font-size:12px">2倍適用！</span>' : ''}</h2>
+        <div class="award-list">${ps.map((p, i) => `<div class="award" style="animation-delay:${i * .07}s">${avatarHTML(p, 'sm')}<div class="nm">${nameHTML(p)}${rec.winners.includes(p.id) ? '<span class="badge">トップ</span>' : ''}</div><div class="pt ${rec.awards[p.id] ? '' : 'zero'}">+${rec.awards[p.id]}</div></div>`).join('')}</div></div>
+      <div class="panel mt16"><h2>総合ランキング</h2>${rankListHTML(rec.before)}</div>
+      <div class="footer-actions">
+        <button class="btn" data-act="next">次のゲームを選ぶ</button>
+        <div class="btn-row"><button class="btn yellow sm" data-act="roulette">ルーレットで決める</button><button class="btn ghost sm" data-act="again">もう一度遊ぶ</button></div>
+        <button class="btn purple sm" data-act="final">最終結果を発表する</button></div>`,
+      {
+        ...this.common(),
+        next: () => this.modes(), roulette: () => this.roulette(), again: () => this.intro(key),
+        final: () => this.final(), rank: () => this.standings()
+      }, {
+        mount: () => { if (rec.winners.length) { Sound.play('fanfare'); UI.confetti(2000, 120); } }
+      });
+  },
+  standings() {
+    this.inGame = false;
+    const s = Store.session;
+    const keys = ['choice', 'draw', 'traitor', 'sync', 'quiz'];
+    const played = keys.filter(k => Store.players.some(p => s.games[p.id][k]));
+    UI.show(`${topbar({ left: 'back', title: '総合ランキング', sub: `${s.history.length}ゲーム終了` })}
+      ${rankListHTML()}
+      ${played.length ? `<div class="panel mt16"><h2>ゲーム別の得点</h2><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
+        <tr><th style="text-align:left;padding:6px">名前</th>${played.map(k => `<th style="padding:6px;font-size:12px;color:var(--dim)">${esc(GAMES[k].title.replace('チャレンジ', '').replace('ミッション', ''))}</th>`).join('')}</tr>
+        ${Store.players.map(p => `<tr style="border-top:1px solid var(--line)"><td style="padding:8px 6px;font-weight:900;white-space:nowrap">${nameHTML(p)}</td>${played.map(k => `<td style="text-align:center;font-weight:800">${s.games[p.id][k] ? s.games[p.id][k].points : '-'}</td>`).join('')}</tr>`).join('')}
+      </table></div></div>` : '<p class="center dim mt16">まだゲームをしていません</p>'}
+      <div class="footer-actions">
+        <button class="btn" data-act="goBack">ゲーム選択へ</button>
+        ${s.history.length ? '<button class="btn purple sm" data-act="final">最終結果を発表する</button>' : ''}
+        <button class="btn ghost sm" data-act="reset">得点をリセット</button></div>`,
+      {
+        ...this.common(), final: () => this.final(),
+        reset: async (d, el) => {
+          if (await UI.confirm('得点をリセットしますか？', 'すべての得点・成績・称号の記録が0に戻ります（メンバーはそのまま）。', 'リセット', 'やめる')) { Store.newSession(); UI.toast('得点をリセットしました'); this.standings(); }
+          else el.dataset.used = '';
+        }
+      });
+  },
+  /* 最終結果の表彰：最下位から順に発表 */
+  final() {
+    if (!Store.hasProgress) { UI.toast('まだゲームをしていません'); return; }
+    this.inGame = false;
+    const rk = Score.ranking();
+    const ranks = [...new Set(rk.map(r => r.rank))].sort((a, b) => b - a); // 最下位から
+    let step = -1;
+    const opening = () => {
+      UI.show(`${topbar({ left: 'back', title: '最終結果発表' })}
+        <div class="pass"><div class="lantern-row">${ICON.lantern('#ff4d5e', '祝')}${ICON.lantern('#ffd23f', '宴')}${ICON.lantern('#ff4d5e', '祝')}</div>
+        <div class="who">最終結果発表！</div><p class="msg">${Store.session.history.length}ゲームの激闘の結果…<br>最下位から順番に発表します！</p>
+        <button class="btn yellow" data-act="go" data-sfx="drum">発表スタート！</button></div>`,
+        { ...this.common(), go: nextStep });
+    };
+    const nextStep = () => {
+      step++;
+      if (step >= ranks.length) return titles();
+      const rank = ranks[step]; const group = rk.filter(r => r.rank === rank); const first = rank === 1;
+      UI.show(`<div class="drum"><div class="big">第${rank}位は…</div></div>`, {});
+      Sound.play('drum');
+      Timers.timeout(() => {
+        UI.show(`${topbar({ left: 'none', title: '最終結果発表', sub: `${ranks.length - step}/${ranks.length}` })}
+          <div class="grow" style="display:flex;flex-direction:column;justify-content:center;gap:14px">
+          ${group.map(r => `<div class="ceremony-card ${first ? 'first' : ''}">
+            ${first ? `<span class="crown">${ICON.crown}</span>` : ''}
+            <div class="place">${group.length > 1 ? '同率' : ''}第${rank}位</div>
+            <div style="margin-top:10px">${avatarHTML(r.player, first ? 'xl' : 'lg')}</div>
+            <div class="nm">${nameHTML(r.player)}</div><div class="sc">${r.score.toLocaleString()}<small style="font-size:16px">点</small></div>
+            <div class="dim small">トップ獲得 ${r.wins}回</div></div>`).join('')}</div>
+          <div class="footer-actions"><button class="btn ${first ? 'purple' : 'yellow'}" data-act="go">${first ? '称号の発表へ' : step + 1 < ranks.length - 1 ? '次の順位へ' : 'いよいよ1位の発表！'}</button>
+          ${first ? '' : '<button class="btn ghost sm" data-act="skip">1位までスキップ</button>'}</div>`,
+          { go: nextStep, skip: () => { step = ranks.length - 2; nextStep(); } },
+          { mount: () => { if (first) { Sound.play('fanfare'); UI.confetti(3200, 220); Timers.timeout(() => UI.confetti(2400, 140), 900); } else Sound.play('reveal'); } });
+      }, 1600);
+    };
+    const titles = () => {
+      const ts = Score.titles();
+      UI.show(`${topbar({ left: 'home', title: '表彰式', sub: '称号はプレイ結果に基づいて贈られます' })}
+        <div class="panel neon"><h2>称号の授与</h2>
+          ${ts.length ? `<div class="stack">${ts.map((t, i) => { const p = Store.player(t.pid); return `<div class="title-card" style="animation-delay:${i * .15}s">${avatarHTML(p, 'sm')}<div><div class="tt">${esc(t.title)}</div><div style="font-weight:900">${nameHTML(p)}</div><div class="why">${esc(t.why)}</div></div></div>`; }).join('')}</div>`
+          : '<p class="dim">今回は称号の条件を満たした人がいませんでした。もっと遊んで称号を狙おう！</p>'}</div>
+        <div class="panel mt16"><h2>最終順位</h2>${rankListHTML()}</div>
+        <div class="footer-actions">
+          <button class="btn" data-act="again">同じメンバーでもう一度（得点リセット）</button>
+          <button class="btn ghost sm" data-act="cont">得点そのままで続ける</button>
+          <button class="btn ghost sm" data-act="members">メンバーを変えて遊ぶ</button></div>`,
+        {
+          ...this.common(),
+          again: async (d, el) => { if (await UI.confirm('得点をリセットして新しく始めますか？', 'メンバーはそのままで、得点と記録が0に戻ります。', '新しく始める', 'やめる', false)) { Store.newSession(); this.modes(); } else el.dataset.used = ''; },
+          cont: () => this.modes(),
+          members: () => this.setup('modes')
+        }, { mount: () => { Sound.play('correct'); UI.confetti(1600, 100); } });
+    };
+    opening();
+  },
+
+  /* ---------------- 横丁ルーレット ---------------- */
+  roulette() {
+    if (Store.players.length < 3) return this.setup('roulette');
+    this.inGame = false;
+    const s = Store.session;
+    const segs = [
+      { key: 'choice', label: '二択', color: '#ff4d5e' }, { key: 'draw', label: 'お絵描き', color: '#20c4a6' },
+      { key: 'traitor', label: '裏切り者', color: '#8b55f0' }, { key: 'sync', label: '以心伝心', color: '#f0b400' },
+      { key: 'quiz', label: 'クイズ', color: '#3a8ff0' }, { key: 'bonus', label: 'ボーナス', color: '#ff7a2b' }
+    ];
+    const lastGame = s.recent[s.recent.length - 1], prevGame = s.recent[s.recent.length - 2];
+    const resting = segs.filter(g => g.key === lastGame || (g.key === 'bonus' && s.lastSpin === 'bonus')).map(g => g.key);
+    const weight = g => resting.includes(g.key) ? 0 : g.key === prevGame ? .5 : g.key === 'bonus' ? .8 : 1;
+    const cx = 110, cy = 110, R = 104;
+    const pt = (deg, r) => [cx + r * Math.sin(deg * Math.PI / 180), cy - r * Math.cos(deg * Math.PI / 180)];
+    const wheel = segs.map((g, i) => {
+      const a0 = i * 60 - 30, a1 = a0 + 60; const [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R);
+      const rest = resting.includes(g.key);
+      return `<path d="M${cx} ${cy} L${x0.toFixed(2)} ${y0.toFixed(2)} A${R} ${R} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z" fill="${g.color}" stroke="#1b1033" stroke-width="2.5"/>
+        ${rest ? `<path d="M${cx} ${cy} L${x0.toFixed(2)} ${y0.toFixed(2)} A${R} ${R} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z" fill="rgba(10,8,30,.62)"/>` : ''}
+        <g transform="rotate(${i * 60} ${cx} ${cy})"><text x="${cx}" y="${cy - 66}" text-anchor="middle" font-size="${g.label.length > 3 ? 12 : 14}" font-weight="900" fill="#fff" style="font-family:var(--font-body)">${g.label}</text>
+        ${rest ? `<text x="${cx}" y="${cy - 48}" text-anchor="middle" font-size="9" font-weight="900" fill="#ffd23f">お休み</text>` : ''}</g>`;
+    }).join('');
+    const lights = Array.from({ length: 24 }, (_, i) => { const [x, y] = pt(i * 15, R + 2); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${i % 2 ? '#fff3c4' : '#ff9a3c'}"><animate attributeName="opacity" values="1;.3;1" dur="1s" begin="${(i % 2) * .5}s" repeatCount="indefinite"/></circle>`; }).join('');
+    const hist = s.history.filter(h => h.gameKey !== 'bonus').slice(-5).map(h => `<span>${esc(h.title)}</span>`).join('');
+    UI.show(`${topbar({ left: 'home', title: '横丁ルーレット', sub: '次のお楽しみは…？', right: `<button class="icon-btn" data-act="goBack" aria-label="ゲーム選択">${ICON.menu}</button>` })}
+      ${s.multiplier > 1 ? '<div class="center"><span class="chip x2">次のゲームは得点2倍！</span></div>' : ''}
+      <div class="wheel-box"><svg class="wheel-pointer" viewBox="0 0 40 46"><path d="M20 44L4 8a16 16 0 0132 0z" fill="#fff3c4" stroke="#3b1800" stroke-width="3"/></svg>
+        <svg class="wheel" viewBox="0 0 220 220"><circle cx="110" cy="110" r="109" fill="#2a1450" stroke="#ffd23f" stroke-width="2"/><g id="wg">${wheel}</g>${lights}</svg>
+        <div class="wheel-hub">横丁</div></div>
+      <div id="rres"></div>
+      ${hist ? `<p class="center dim small" style="margin:8px 0 4px">最近のゲーム</p><div class="history">${hist}</div>` : ''}
+      <div class="footer-actions" id="ract"><button class="btn yellow" data-act="spin" data-sfx="none">ルーレットを回す！</button></div>`,
+      {
+        ...this.common(),
+        spin: () => {
+          const pool = segs.map((g, i) => ({ g, i, w: weight(g) })).filter(x => x.w > 0);
+          let r = Math.random() * pool.reduce((a, b) => a + b.w, 0); let hit = pool[pool.length - 1];
+          for (const x of pool) { if ((r -= x.w) <= 0) { hit = x; break; } }
+          const target = 360 * 6 - hit.i * 60 + (Math.random() * 36 - 18);
+          const wg = $('#wg'); const dur = 4300; const t0 = performance.now(); let lastSeg = -1;
+          $('#ract').innerHTML = '<p class="center dim">回転中…</p>';
+          Sound.play('whoosh');
+          const frame = now => {
+            const t = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - t, 4); const rot = target * e;
+            wg.setAttribute('transform', `rotate(${rot.toFixed(2)} 110 110)`);
+            const seg = Math.floor((rot + 30) / 60); if (seg !== lastSeg) { lastSeg = seg; Sound.play('spin'); }
+            if (t < 1) Timers.raf(frame); else Timers.timeout(() => landed(hit.g), 350);
+          };
+          Timers.raf(frame);
+        }
+      }, { mount: () => { } });
+    const landed = (g) => {
+      s.lastSpin = g.key; Store.save();
+      if (g.key === 'bonus') return bonus();
+      Sound.play('reveal');
+      const m = GAMES[g.key];
+      $('#rres').innerHTML = `<div class="roulette-result"><div class="dim small">決定！</div><div class="rt">${esc(m.title)}</div></div>`;
+      $('#ract').innerHTML = `<button class="btn" data-act="play" data-sfx="confirm">${esc(m.title)}で遊ぶ</button><button class="btn ghost sm" data-act="goBack">自分で選ぶ</button>`;
+      UI.handlers.play = () => this.intro(g.key);
+    };
+    const bonus = () => {
+      const rk = Score.ranking(); const allTie = rk.every(r => r.score === rk[0].score);
+      const evs = DATA.bonusEvents.filter(e => !(e.id === 'underdog' && allTie) && !(e.id === 'double' && s.multiplier > 1));
+      const ev = pick(evs); const roundId = uid('bonus');
+      Sound.play('fanfare'); UI.confetti(1500, 100);
+      const awards = {}; let detail = '';
+      if (ev.id === 'double') { s.multiplier = 2; Store.save(); detail = '次に遊ぶミニゲームの獲得得点が2倍になります！'; }
+      else if (ev.id === 'underdog') { const low = rk[rk.length - 1].rank; rk.filter(r => r.rank === low).forEach(r => awards[r.player.id] = 80); }
+      else if (ev.id === 'luckydraw') { awards[pick(Store.players).id] = 50; }
+      else if (ev.id === 'allstar') { Store.players.forEach(p => awards[p.id] = 30); }
+      const show = () => {
+        if (Object.keys(awards).length) {
+          Score.commit(roundId, 'bonus', awards, {}, { noMultiplier: true, noWin: true, noRecent: true, title: 'ボーナス' });
+          detail = `<div class="award-list mt8">${Object.keys(awards).map(id => { const p = Store.player(id); return `<div class="award">${avatarHTML(p, 'sm')}<div class="nm">${nameHTML(p)}</div><div class="pt">+${awards[id]}</div></div>`; }).join('')}</div>`;
+        }
+        $('#rres').innerHTML = `<div class="roulette-result panel neon"><div class="dim small">ボーナスイベント！</div><div class="rt">${esc(ev.title)}</div><p style="margin:6px 0 0">${esc(ev.desc)}</p>${ev.id === 'double' ? `<p class="small" style="color:var(--yellow);font-weight:900">${detail}</p>` : detail}</div>`;
+        $('#ract').innerHTML = `<button class="btn" data-act="goBack">ゲームを選ぶ</button><button class="btn yellow sm" data-act="again">もう一度ルーレット</button>`;
+        UI.handlers.again = () => this.roulette();
+      };
+      if (ev.id === 'luckydraw') {
+        // 名前がくるくる回って当選者が決まる演出
+        const winner = Store.player(Object.keys(awards)[0]); let k = 0; const t0 = performance.now();
+        $('#rres').innerHTML = `<div class="roulette-result panel"><div class="dim small">横丁くじ引き</div><div class="rt" id="ld"></div></div>`;
+        const id = Timers.interval(() => {
+          const el = $('#ld'); if (!el) return;
+          el.textContent = Store.players[k++ % Store.players.length].name; Sound.play('spin');
+          if (performance.now() - t0 > 1600) { Timers.clear(id); el.textContent = winner.name; Sound.play('correct'); Timers.timeout(show, 700); }
+        }, 90);
+      } else show();
+    };
+  }
+};
+
+window.addEventListener('DOMContentLoaded', () => App.init());
+
+/* 背景の提灯 */
+document.querySelectorAll('#bg .side-lantern').forEach((el,i)=>el.innerHTML=ICON.lantern(i?'#ff9a3c':'#ff4d5e',i?'丁':'横'));
+
+</script>
+</body>
+</html>
