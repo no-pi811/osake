@@ -1,0 +1,2 @@
+# osake
+osake
